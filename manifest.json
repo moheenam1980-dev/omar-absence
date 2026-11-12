@@ -1,0 +1,17 @@
+{
+  "name": "نظام غيابات الطلبة - كلية علوم الحاسوب والرياضيات",
+  "short_name": "الغيابات",
+  "description": "تسجيل غيابات الطلبة بمسح رمز QR",
+  "lang": "ar",
+  "dir": "rtl",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#10114a",
+  "theme_color": "#1b1e6b",
+  "icons": [
+    { "src": "img/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "img/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}
