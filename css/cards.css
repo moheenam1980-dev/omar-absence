@@ -1,0 +1,224 @@
+@font-face { font-family: 'Tajawal'; font-weight: 400; font-display: swap; src: url(../fonts/tajawal-arabic-400-normal.woff2) format('woff2'); unicode-range: U+0600-06FF, U+0750-077F, U+FB50-FDFF, U+FE70-FEFF, U+200C-200E; }
+@font-face { font-family: 'Tajawal'; font-weight: 500; font-display: swap; src: url(../fonts/tajawal-arabic-500-normal.woff2) format('woff2'); unicode-range: U+0600-06FF, U+0750-077F, U+FB50-FDFF, U+FE70-FEFF, U+200C-200E; }
+@font-face { font-family: 'Tajawal'; font-weight: 700; font-display: swap; src: url(../fonts/tajawal-arabic-700-normal.woff2) format('woff2'); unicode-range: U+0600-06FF, U+0750-077F, U+FB50-FDFF, U+FE70-FEFF, U+200C-200E; }
+@font-face { font-family: 'Tajawal'; font-weight: 400; font-display: swap; src: url(../fonts/tajawal-latin-400-normal.woff2) format('woff2'); unicode-range: U+0000-00FF, U+2000-206F; }
+@font-face { font-family: 'Tajawal'; font-weight: 500; font-display: swap; src: url(../fonts/tajawal-latin-500-normal.woff2) format('woff2'); unicode-range: U+0000-00FF, U+2000-206F; }
+@font-face { font-family: 'Tajawal'; font-weight: 700; font-display: swap; src: url(../fonts/tajawal-latin-700-normal.woff2) format('woff2'); unicode-range: U+0000-00FF, U+2000-206F; }
+/* هويات الطلبة (6 في ورقة A4) - نفس تصميم منظومة الهويات السابقة */
+.a4-page, .a4-page * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Tajawal', sans-serif; font-weight: 500; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.a4-page {
+  --navy: #262a86; --navy-dark: #10114a; --indigo: #4433b5; --teal: #0b8e9e; --teal-soft: #d6f1f4; --ink: #0d1030; --muted: #4a5276;
+  --grad-main: linear-gradient(125deg, #0d0e3f 0%, #22267e 45%, #3f2fab 75%, #0b8e9e 125%);
+  --grad-accent: linear-gradient(90deg, #0b8e9e, #4433b5 55%, #e3a12a);
+  --logo-url: url(../img/logo.jpg);
+  direction: rtl; color: var(--ink); line-height: normal;
+}
+#pagesContainer { padding: 0 15px; }
+
+.a4-page {
+  width: 210mm;
+  height: 297mm;
+  padding: 8mm;
+  margin: 0 auto 30px auto;
+  background: #ffffff;
+  box-shadow: 0 14px 34px -10px rgba(15, 23, 42, 0.22);
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  gap: 6mm;
+  page-break-after: always;
+  break-after: page;
+  box-sizing: border-box;
+  border-radius: 4px;
+}
+
+/* ================= بطاقة الهوية ================= */
+.id-card {
+  border: 1.6px solid #a9b0d8;
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  background: #ffffff;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+/* العلامة المائية: شعار الكلية */
+.id-card::before {
+  content: "";
+  position: absolute;
+  width: 62%;
+  aspect-ratio: 1;
+  left: 50%;
+  top: 58%;
+  transform: translate(-50%, -50%);
+  background: var(--logo-url) center / contain no-repeat;
+  opacity: 0.05;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.id-card > * { position: relative; z-index: 1; }
+
+/* ترويسة البطاقة */
+.card-header {
+  background: var(--grad-main);
+  color: #ffffff;
+  padding: 11px 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.card-logo {
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  background: #ffffff;
+  padding: 2px;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.35);
+}
+.card-logo img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; display: block; }
+
+.card-titles { line-height: 1.25; text-align: right; }
+.uni-title { font-size: 12.5px; font-weight: 500; color: rgba(255, 255, 255, 0.78); }
+.inst-title { font-size: 17px; font-weight: 500; color: #ffffff; }
+.dept-title { font-size: 14.5px; font-weight: 500; color: #a8f0f7; }
+
+.card-accent {
+  height: 3px;
+  background: var(--grad-accent);
+  flex-shrink: 0;
+}
+
+.card-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 10px 14px 8px;
+  min-height: 0;
+}
+
+.card-footer {
+  flex-shrink: 0;
+  background: #f5f7fd;
+  border-top: 1px solid #e3e7f5;
+  padding: 5px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--muted);
+}
+.card-footer .brand { color: var(--navy); letter-spacing: 1px; direction: ltr; }
+
+.name-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+  margin-bottom: 2px;
+}
+
+/* شريط اسم الطالب */
+.student-name-container {
+  width: 100%;
+  background: #f5f7fd;
+  border: 1px solid #dde2f4;
+  border-right: 4px solid var(--indigo);
+  border-radius: 8px;
+  padding: 7px 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.student-name-text {
+  font-weight: 500;
+  color: var(--navy-dark);
+  white-space: nowrap;
+  text-align: center;
+  display: inline-block;
+  width: auto;
+  line-height: 1.35;
+}
+
+/* الجزء السفلي */
+.card-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex: 1;
+  margin-top: 8px;
+}
+
+.meta-details {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  flex: 1;
+}
+
+.meta-badge {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid #dde2f4;
+  border-radius: 9px;
+  padding: 5px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.meta-badge .k { font-size: 12.5px; font-weight: 500; color: var(--muted); }
+.meta-badge .v {
+  font-size: 15.5px;
+  font-weight: 500;
+  color: var(--ink);
+  background: var(--teal-soft);
+  color: #075f6a;
+  padding: 1px 10px;
+  border-radius: 999px;
+}
+
+/* حاوية الـ QR */
+.qr-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: #ffffff;
+  padding: 6px;
+  border-radius: 12px;
+  border: 1.4px solid var(--indigo);
+  flex-shrink: 0;
+}
+
+.qr-box {
+  width: 95px;
+  height: 95px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.qr-box img,
+.qr-box canvas {
+  width: 95px !important;
+  height: 95px !important;
+}
+
+.qr-caption {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--navy);
+  margin-top: 3px;
+  letter-spacing: 0.5px;
+  direction: ltr;
+}
