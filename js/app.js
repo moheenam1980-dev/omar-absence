@@ -13,6 +13,8 @@
   };
   var S = { token: store.get('token', ''), boot: null, queue: store.get('queue', []), draft: store.get('draft', null), byId: {}, deptName: {}, showAll: false };
   var ROLE = { admin: 'مدير النظام', head: 'رئيس / مقرر قسم', instructor: 'تدريسي' };
+  // مدير النظام موظف إداري: إذا لم تُسند إليه مواد لا تظهر له صفحات التدريسي
+  function staffOnly() { return S.boot && S.boot.user.role === 'admin' && !S.boot.teaching.length; }
 
   /* ---------------- أدوات ---------------- */
   var $ = function (sel, root) { return (root || document).querySelector(sel); };
@@ -187,7 +189,7 @@
     n.textContent = off ? 'غير متصل' : (S.queue.length ? 'بانتظار الإرسال: ' + S.queue.length : '');
   }
   function paintNav(cur) {
-    var items = [['home', 'الرئيسية', ICON.home], ['sessions', 'السجل', ICON.list]];
+    var items = staffOnly() ? [] : [['home', 'الرئيسية', ICON.home], ['sessions', 'السجل', ICON.list]];
     if (isManager()) items.push(['admin', 'الإدارة', ICON.admin]);
     items.push(['account', 'حسابي', ICON.user]);
     $('#nav').innerHTML = items.map(function (i) {
@@ -594,9 +596,9 @@
   function viewAccount() {
     var u = S.boot.user;
     mount(title('حسابي') + '<div class="card"><h3>' + esc(u.name) + '</h3><div class="wrap" style="margin-top:6px"><span class="chip">' + esc(ROLE[u.role] || u.role) + '</span>' +
-      '<span class="chip teal">' + esc(S.deptName[u.dept_id] || '') + '</span><span class="chip num">' + esc(u.username) + '</span></div></div>' +
+      (S.deptName[u.dept_id] ? '<span class="chip teal">' + esc(S.deptName[u.dept_id]) + '</span>' : '') + '<span class="chip num">' + esc(u.username) + '</span></div></div>' +
       '<div class="card"><h3>تغيير كلمة المرور</h3><form id="pwForm"><label class="f" for="pw0">كلمة المرور الحالية</label><input class="inp" type="password" id="pw0" dir="ltr" autocomplete="current-password" required>' +
-      '<label class="f" for="pw1">كلمة المرور الجديدة (6 أحرف على الأقل)</label><input class="inp" type="password" id="pw1" dir="ltr" autocomplete="new-password" minlength="6" required>' +
+      '<label class="f" for="pw1">كلمة المرور الجديدة (4 أحرف على الأقل)</label><input class="inp" type="password" id="pw1" dir="ltr" autocomplete="new-password" minlength="4" required>' +
       '<label class="f" for="pw2">تأكيد كلمة المرور الجديدة</label><input class="inp" type="password" id="pw2" dir="ltr" autocomplete="new-password" required>' +
       '<button class="btn block" style="margin-top:14px">حفظ كلمة المرور</button></form></div>' +
       '<div class="card"><button class="btn soft block" data-act="refresh">تحديث البيانات من الخادم</button>' +
@@ -621,6 +623,7 @@
     closeModal();
     if (!S.token || !S.boot) return viewLogin();
     if (page === 'login') return go('#/home');
+    if (staffOnly() && (page === 'home' || page === 'sessions' || page === 'take')) return go('#/admin');
     if (page === 'home') return viewHome();
     if (page === 'take') return viewTake(r[1]);
     if (page === 'scan') return viewScan();

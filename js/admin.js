@@ -8,11 +8,11 @@
   var STUDIES = ['صباحي', 'مسائي'], SEMS = ['الأول', 'الثاني', 'سنوي'];
   var M = { meta: null, dept: A.store.get('adminDept', ''), data: {}, tab: 'dash', f: { q: '', stage: '', section: '', study: '', limit: 150 } };
   var TABS = [['dash', 'المتابعة'], ['students', 'الطلبة'], ['courses', 'المواد'], ['teaching', 'الإسناد'], ['enrollment', 'المحمَّلون'], ['cards', 'الهويات'],
-              ['reports', 'التقارير'], ['sessions', 'المحاضرات'], ['instructors', 'التدريسيون', 1], ['departments', 'الأقسام', 1], ['years', 'السنوات', 1], ['settings', 'الإعدادات', 1]];
+              ['reports', 'التقارير'], ['sessions', 'المحاضرات'], ['instructors', 'الحسابات', 1], ['departments', 'الأقسام', 1], ['years', 'السنوات', 1], ['settings', 'الإعدادات', 1]];
   var NO_DEPT = { dash: 1, departments: 1, years: 1, settings: 1 };
 
   function stages() { return S.boot.settings.stages.split(/[,،]/).map(function (x) { return x.trim(); }).filter(String); }
-  function deptName(id) { var d = (M.meta.departments || []).filter(function (x) { return x.dept_id === id; })[0]; return d ? d.dept_name : ''; }
+  function deptName(id) { if (!id) return ''; var d = (M.meta.departments || []).filter(function (x) { return x.dept_id === id; })[0]; return d ? d.dept_name : ''; }
   function opt(list, val, empty) {
     return (empty !== undefined ? '<option value="">' + esc(empty) + '</option>' : '') + list.map(function (o) {
       var v = Array.isArray(o) ? o[0] : o, l = Array.isArray(o) ? o[1] : o;
@@ -71,7 +71,9 @@
   /* ---------- نموذج إدخال عام ---------- */
   function form(titleTxt, fields, onSubmit) {
     A.modal('<h3>' + esc(titleTxt) + '</h3><form id="adForm">' + fields.map(function (f) {
-      var id = 'ff_' + f.k, h = '<label class="f" for="' + id + '">' + esc(f.label) + '</label>';
+      var id = 'ff_' + f.k;
+      if (f.hidden) return '<input type="hidden" id="' + id + '" value="' + esc(f.value) + '">';
+      var h = '<label class="f" for="' + id + '">' + esc(f.label) + '</label>';
       if (f.type === 'select') h += '<select class="inp" id="' + id + '"' + (f.req === false ? '' : ' required') + '>' + opt(f.options, f.value, f.empty) + '</select>';
       else h += '<input class="inp" id="' + id + '" type="' + (f.type || 'text') + '" value="' + esc(f.value === undefined ? '' : f.value) + '"' +
                 (f.ltr ? ' dir="ltr" autocapitalize="none" spellcheck="false"' : '') + (f.req === false ? '' : ' required') + (f.type === 'number' ? ' min="0" step="any" inputmode="decimal"' : '') +
@@ -195,9 +197,10 @@
   /* ----- التدريسيون ----- */
   VIEW.instructors = function () {
     var list = M.meta.instructors.slice().sort(function (a, b) { return a.ins_name.localeCompare(b.ins_name, 'ar'); });
-    frame('<div class="toolbar"><button class="btn sm" data-act="aAdd" data-e="instructors">إضافة تدريسي</button><button class="btn sm ok" data-act="aImport" data-e="instructors">رفع إكسل</button><span class="sp"></span><span class="muted">العدد: ' + list.length + '</span></div>' +
-      table(['الاسم', 'القسم', 'اسم المستخدم', 'الصلاحية', 'الحالة', 'آخر دخول', ''], list.map(function (i) {
-        return '<tr><td class="w">' + esc(i.ins_name) + '</td><td>' + esc(deptName(i.dept_id)) + '</td><td class="num">' + esc(i.username) + '</td><td>' + esc(A.ROLE[i.role] || i.role) + '</td><td>' + yn(i.active) +
+    frame('<div class="note">مدير النظام موظف إداري لا يحتاج قسماً. كلمات المرور ظاهرة هنا وفي ورقة instructors في الشيت.</div>' +
+      '<div class="toolbar"><button class="btn sm" data-act="aAdd" data-e="instructors">إضافة حساب</button><button class="btn sm ok" data-act="aImport" data-e="instructors">رفع إكسل</button><span class="sp"></span><span class="muted">العدد: ' + list.length + '</span></div>' +
+      table(['الاسم', 'القسم', 'اسم المستخدم', 'كلمة المرور', 'الصلاحية', 'الحالة', 'آخر دخول', ''], list.map(function (i) {
+        return '<tr><td class="w">' + esc(i.ins_name) + '</td><td>' + esc(deptName(i.dept_id) || '—') + '</td><td class="num">' + esc(i.username) + '</td><td class="num">' + esc(i.password) + '</td><td>' + esc(A.ROLE[i.role] || i.role) + '</td><td>' + yn(i.active) +
                '</td><td class="num">' + esc(i.last_login || '-') + '</td>' + acts('instructors', i.ins_id) + '</tr>';
       })));
     return Promise.resolve();
@@ -345,11 +348,17 @@
       form(isNew ? 'إضافة طالب' : 'تعديل بيانات طالب', [
         { k: 'st_id', label: 'رقم الطالب (هو ما يُطبع في رمز QR)', value: r.st_id, ltr: 1, readonly: !isNew },
         { k: 'st_name', label: 'اسم الطالب', value: r.st_name },
+        isAdmin() ? { k: 'dept_id', label: 'القسم', type: 'select', value: r.dept_id || M.dept, options: M.meta.departments.map(function (d) { return [d.dept_id, d.dept_name]; }) }
+                  : { k: 'dept_id', label: 'القسم', value: M.dept, readonly: 1, hidden: 1 },
         { k: 'st_stage', label: 'المرحلة', type: 'select', options: st, value: r.st_stage || M.f.stage, empty: 'اختر' },
         { k: 'st_section', label: 'الشعبة', value: r.st_section || M.f.section, ltr: 1 },
         { k: 'st_study', label: 'الدراسة', type: 'select', options: STUDIES, value: r.st_study || M.f.study || 'صباحي' },
         { k: 'status', label: 'الحالة', type: 'select', options: ['مستمر', 'مؤجل', 'مرقن قيده', 'متخرج'], value: r.status || 'مستمر', hint: 'غير «مستمر» لا يظهر في قوائم الغياب' }
-      ], function (v) { v._id = id || ''; v.dept_id = M.dept; return saveRow('students', v, ['students']); });
+      ], function (v) {
+        v._id = id || ''; if (!isAdmin()) v.dept_id = M.dept;
+        for (var k in M.data) delete M.data[k].students;      // قد يُنقل الطالب إلى قسم آخر
+        return saveRow('students', v, ['students']);
+      });
     } else if (ent === 'courses') {
       r = find(D.courses, 'c_id');
       form(isNew ? 'إضافة مادة' : 'تعديل مادة', [
@@ -367,7 +376,7 @@
         { k: 'c_id', label: 'المادة', type: 'select', empty: 'اختر المادة', value: r.c_id,
           options: D.courses.filter(function (c) { return c.active !== 'لا'; }).map(function (c) { return [c.c_id, c.c_name + ' - ' + c.c_stage]; }) },
         { k: 'ins_id', label: 'التدريسي', type: 'select', empty: 'اختر التدريسي', value: r.ins_id,
-          options: M.meta.instructors.filter(function (i) { return i.active !== 'لا'; }).sort(function (a, b) { return a.ins_name.localeCompare(b.ins_name, 'ar'); })
+          options: M.meta.instructors.filter(function (i) { return i.active !== 'لا' && i.dept_id; }).sort(function (a, b) { return a.ins_name.localeCompare(b.ins_name, 'ar'); })
                     .map(function (i) { return [i.ins_id, i.ins_name + ' (' + deptName(i.dept_id) + ')']; }) },
         { k: 'section', label: 'الشعبة', value: r.section, ltr: 1, req: false, hint: 'اتركها فارغة إذا كان يدرّس كل الشعب، وسيختار الشعبة عند كل محاضرة' },
         { k: 'study', label: 'الدراسة', type: 'select', options: STUDIES, value: r.study || 'صباحي' }
@@ -381,12 +390,13 @@
       ], function (v) { v._id = ''; return saveRow('enrollment', v, ['enrollment']); });
     } else if (ent === 'instructors') {
       r = find(M.meta.instructors, 'ins_id');
-      form(isNew ? 'إضافة تدريسي' : 'تعديل تدريسي', [
+      form(isNew ? 'إضافة حساب' : 'تعديل حساب', [
         { k: 'ins_name', label: 'الاسم', value: r.ins_name },
-        { k: 'dept_id', label: 'القسم', type: 'select', value: r.dept_id || M.dept, options: M.meta.departments.map(function (d) { return [d.dept_id, d.dept_name]; }) },
+        { k: 'role', label: 'الصلاحية', type: 'select', value: r.role || 'instructor', options: [['instructor', 'تدريسي'], ['head', 'رئيس / مقرر قسم'], ['admin', 'مدير النظام (موظف إداري)']] },
+        { k: 'dept_id', label: 'القسم', type: 'select', req: false, empty: 'بدون قسم (لمدير النظام فقط)', value: isNew ? M.dept : r.dept_id,
+          options: M.meta.departments.map(function (d) { return [d.dept_id, d.dept_name]; }) },
         { k: 'username', label: 'اسم المستخدم (أحرف إنجليزية وأرقام)', value: r.username, ltr: 1 },
-        { k: 'password', label: isNew ? 'كلمة المرور (6 أحرف على الأقل)' : 'كلمة مرور جديدة', ltr: 1, req: isNew, hint: isNew ? '' : 'اتركها فارغة للإبقاء على كلمة المرور الحالية' },
-        { k: 'role', label: 'الصلاحية', type: 'select', value: r.role || 'instructor', options: [['instructor', 'تدريسي'], ['head', 'رئيس / مقرر قسم'], ['admin', 'مدير النظام']] },
+        { k: 'password', label: 'كلمة المرور (4 أحرف على الأقل)', value: r.password, ltr: 1 },
         { k: 'active', label: 'الحساب', type: 'select', value: r.active || 'نعم', options: [['نعم', 'فعّال'], ['لا', 'معطّل']] }
       ], function (v) { v._id = id || ''; return saveRow('instructors', v, [], true); });
     } else if (ent === 'departments') {
@@ -416,9 +426,10 @@
     return String(s === undefined || s === null ? '' : s).replace(/[ً-ْـ]/g, '').replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي').replace(/\s+/g, ' ').trim().toLowerCase();
   }
   var IMP = {
-    students: { title: 'رفع قائمة الطلبة', file: 'قالب الطلبة', sample: ['202612345', 'أحمد محمد علي حسين', 'الأولى', 'A', 'صباحي'],
+    students: { title: 'رفع قائمة الطلبة', file: 'قالب الطلبة', sample: ['202612345', 'أحمد محمد علي حسين', 'الأولى', 'A', 'صباحي', 'تكنولوجيا الإعلام الرقمي'],
       cols: [['st_id', 'الرقم', ['رقم', 'رقم الطالب', 'الرقم الجامعي', 'id', 'رقم البطاقه الوطنيه']], ['st_name', 'الاسم', ['اسم الطالب', 'الاسم الرباعي', 'name']],
-             ['st_stage', 'المرحلة', ['stage', 'الصف']], ['st_section', 'الشعبة', ['section']], ['st_study', 'الدراسة', ['نوع الدراسه', 'study']]], req: ['st_id', 'st_name', 'st_stage', 'st_section'] },
+             ['st_stage', 'المرحلة', ['stage', 'الصف']], ['st_section', 'الشعبة', ['section']], ['st_study', 'الدراسة', ['نوع الدراسه', 'study']],
+             ['dept_name', 'القسم', ['اسم القسم', 'dept', 'department']]], req: ['st_id', 'st_name', 'st_stage', 'st_section'] },
     courses: { title: 'رفع قائمة المواد', file: 'قالب المواد', sample: ['البرمجة المهيكلة', 'الأولى', 'الأول', 4, 60, 6],
       cols: [['c_name', 'اسم المادة', ['الماده', 'اسم الماده', 'course']], ['c_stage', 'المرحلة', ['stage']], ['c_semester', 'الفصل', ['الكورس', 'semester']],
              ['c_w_hours', 'الساعات الأسبوعية', ['الساعات الاسبوعيه', 'ساعات اسبوعيه']], ['c_total_hours', 'الساعات الكلية', ['الساعات الكليه', 'ساعات كليه']], ['ects', 'الوحدات', ['ects']]], req: ['c_name', 'c_stage'] },
@@ -433,7 +444,7 @@
   }
   function fixStudy(v, def) { var x = nrm(v); return x.indexOf('مسا') >= 0 ? 'مسائي' : x.indexOf('صبا') >= 0 ? 'صباحي' : (x ? String(v).trim() : def); }
   function fixSem(v) { var x = nrm(v).replace(/^ال/, ''); return x === 'اول' || x === '1' ? 'الأول' : x === 'ثاني' || x === '2' ? 'الثاني' : (!x || x === 'سنوي' ? 'سنوي' : String(v).trim()); }
-  function parseFile(ent, file, defStudy) {
+  function parseFile(ent, file, defStudy, needDept) {
     var spec = IMP[ent];
     return A.loadScript('lib/xlsx.full.min.js').then(function () { return file.arrayBuffer(); }).then(function (buf) {
       var X = window.XLSX, wb = X.read(new Uint8Array(buf), { type: 'array' }), aoa = X.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, defval: '', raw: true });
@@ -444,7 +455,7 @@
         head.forEach(function (h, j) { if (i < 0 && names.indexOf(h) >= 0) i = j; });
         map[c[0]] = i;
       });
-      var miss = spec.req.filter(function (k) { return map[k] < 0; });
+      var miss = spec.req.concat(needDept ? ['dept_name'] : []).filter(function (k) { return map[k] < 0; });
       if (miss.length) throw new Error('أعمدة ناقصة في الملف: ' + miss.map(function (k) { return spec.cols.filter(function (c) { return c[0] === k; })[0][1]; }).join('، '));
       var rows = [];
       aoa.slice(1).forEach(function (r) {
@@ -464,12 +475,14 @@
   function importDialog(ent) {
     var spec = IMP[ent], extra = '';
     if (ent === 'students') {
-      extra = '<label class="f" for="imStudy">نوع الدراسة (يُستخدم إذا لم يوجد عمود «الدراسة» في الملف)</label><select class="inp" id="imStudy">' + opt(STUDIES, 'صباحي') + '</select>' +
+      extra = (isAdmin() ? '<label class="f" for="imDept">القسم</label><select class="inp" id="imDept">' +
+        opt([['*', 'حسب عمود «القسم» في الملف (كل الأقسام في ملف واحد)']].concat(M.meta.departments.map(function (d) { return [d.dept_id, 'كل الطلبة إلى قسم: ' + d.dept_name]; })), M.dept) + '</select>' : '') +
+        '<label class="f" for="imStudy">نوع الدراسة (يُستخدم إذا لم يوجد عمود «الدراسة» في الملف)</label><select class="inp" id="imStudy">' + opt(STUDIES, 'صباحي') + '</select>' +
               '<label class="f" for="imMode">طريقة الرفع</label><select class="inp" id="imMode"><option value="merge">إضافة الجدد وتحديث الموجودين</option>' +
               '<option value="replace">استبدال: حذف طلبة القسم (لنفس نوع الدراسة) غير الموجودين في الملف</option></select>';
     }
-    A.modal('<h3>' + spec.title + ' - ' + esc(deptName(M.dept)) + '</h3><div class="muted" style="font-size:14px;margin-bottom:6px">الأعمدة المطلوبة في الصف الأول: ' +
-      spec.cols.map(function (c) { return '<span class="chip">' + c[1] + '</span>'; }).join(' ') + '</div>' +
+    A.modal('<h3>' + spec.title + '</h3><div class="muted" style="font-size:14px;margin-bottom:6px">الأعمدة في الصف الأول: ' +
+      spec.cols.map(function (c) { return '<span class="chip">' + c[1] + (spec.req.indexOf(c[0]) < 0 ? ' (اختياري)' : '') + '</span>'; }).join(' ') + '</div>' +
       (ent === 'instructors' ? '<div class="note">إذا تُركت كلمة المرور فارغة يولّد النظام كلمة لكل تدريسي ويعرضها لك مرة واحدة.</div>' : '') +
       '<button class="btn sm soft" data-act="aTemplate" data-e="' + ent + '">تحميل قالب إكسل جاهز</button>' + extra +
       '<label class="f" for="imFile">ملف الإكسل</label><input class="inp" type="file" id="imFile" accept=".xlsx,.xls"><div id="imInfo" style="margin-top:10px"></div>' +
@@ -479,7 +492,7 @@
       var f = $('#imFile').files[0];
       if (!f) return;
       $('#imGo').disabled = true;
-      parseFile(ent, f, $('#imStudy') ? $('#imStudy').value : '').then(function (r) {
+      parseFile(ent, f, $('#imStudy') ? $('#imStudy').value : '', $('#imDept') && $('#imDept').value === '*').then(function (r) {
         rows = r;
         $('#imInfo').innerHTML = '<div class="note ok">تمت قراءة الملف: ' + r.length + ' سجل. اضغط «رفع» للحفظ.</div>';
         $('#imGo').disabled = false;
@@ -487,11 +500,12 @@
     };
     $('#imFile').onchange = read;
     if ($('#imStudy')) $('#imStudy').onchange = read;
+    if ($('#imDept')) $('#imDept').onchange = read;
     $('#imGo').onclick = function () {
       var b = this, mode = $('#imMode') ? $('#imMode').value : 'merge';
       var run = function () {
         b.disabled = true; b.textContent = 'جاري الرفع...';
-        api('importRows', { entity: ent, dept_id: M.dept, rows: rows, mode: mode }).then(function (r) {
+        api('importRows', { entity: ent, dept_id: $('#imDept') ? $('#imDept').value : M.dept, rows: rows, mode: mode }).then(function (r) {
           var h = '<h3>نتيجة الرفع</h3><div class="note ok">جديد: ' + r.added + ' · تحديث: ' + r.updated + (r.removed ? ' · حذف: ' + r.removed : '') + '</div>';
           if (r.errors.length) h += '<div class="note bad"><b>سجلات لم تُرفع (' + r.errors.length + (r.errors.length >= 60 ? '+' : '') + '):</b><br>' + r.errors.map(esc).join('<br>') + '</div>';
           if (r.creds && r.creds.length) {
@@ -502,7 +516,7 @@
           A.modal(h + '<button class="btn ghost block" style="margin-top:12px" data-act="aImportDone" data-e="' + ent + '">تم</button>');
         }).catch(function (e) { b.disabled = false; b.textContent = 'رفع'; fail(e); });
       };
-      if (mode === 'replace') { if (window.confirm('سيُحذف من القسم كل طالب (لنفس نوع الدراسة) غير موجود في الملف. متابعة؟')) run(); } else run();
+      if (mode === 'replace') { if (window.confirm('سيُحذف من الأقسام الموجودة في الملف كل طالب (لنفس نوع الدراسة) غير موجود في الملف. متابعة؟')) run(); } else run();
     };
   }
 
@@ -516,7 +530,7 @@
     },
     aMore: function () { M.f.limit += 300; paintStudents(); },
     aImport: function (el) { importDialog(el.dataset.e); },
-    aImportDone: function (el) { A.closeModal(); changed(el.dataset.e === 'instructors' ? [] : [el.dataset.e], el.dataset.e === 'instructors'); },
+    aImportDone: function (el) { A.closeModal(); if (el.dataset.e === 'students') for (var k in M.data) delete M.data[k].students; changed(el.dataset.e === 'instructors' ? [] : [el.dataset.e], el.dataset.e === 'instructors'); },
     aTemplate: function (el) { var s = IMP[el.dataset.e]; A.exportXlsx(s.file, [{ name: 'القالب', rows: [s.cols.map(function (c) { return c[1]; }), s.sample] }]); },
     aXlsCreds: function () { A.exportXlsx('حسابات التدريسيين', [{ name: 'الحسابات', rows: [['الاسم', 'اسم المستخدم', 'كلمة المرور']].concat(M.creds) }]); },
     aXlsStudents: function () {
