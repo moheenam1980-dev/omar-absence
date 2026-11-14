@@ -113,7 +113,7 @@
       d.depts.forEach(function (x) { for (var k in t) t[k] += x[k]; });
       frame('<div class="stats"><div class="stat"><b>' + t.students + '</b><span>الطلبة</span></div><div class="stat"><b>' + t.instructors + '</b><span>التدريسيون</span></div>' +
         '<div class="stat"><b>' + t.courses + '</b><span>المواد</span></div><div class="stat"><b>' + t.today + '</b><span>محاضرات اليوم</span></div></div>' +
-        '<div class="note">السنة الدراسية الحالية: <b>' + esc(d.year) + '</b> · مجموع المحاضرات المسجلة: <b>' + t.sessions + '</b> · مجموع الغيابات: <b>' + t.absences + '</b></div>' +
+        '<div class="note">السنة الدراسية الحالية: <b>' + A.ltr(esc(d.year)) + '</b> · مجموع المحاضرات المسجلة: <b>' + t.sessions + '</b> · مجموع الغيابات: <b>' + t.absences + '</b></div>' +
         table(['القسم', 'الطلبة', 'التدريسيون', 'المواد', 'المحاضرات', 'اليوم', 'الغيابات'], d.depts.map(function (x) {
           return '<tr><td class="w">' + esc(x.name) + '</td><td>' + x.students + '</td><td>' + x.instructors + '</td><td>' + x.courses + '</td><td>' + x.sessions + '</td><td>' + x.today + '</td><td>' + x.absences + '</td></tr>';
         })));
@@ -317,7 +317,7 @@
           '<div class="card-body"><div class="student-name-container"><span class="student-name-text">' + esc(x.st_name) + '</span></div><div class="card-bottom"><div class="meta-details">' +
           '<div class="meta-badge"><span class="k">المرحلة</span><span class="v">' + esc(x.st_stage) + '</span></div><div class="meta-badge"><span class="k">الشعبة</span><span class="v">' + esc(x.st_section) + '</span></div>' +
           '<div class="meta-badge"><span class="k">الدراسة</span><span class="v">' + esc(x.st_study) + '</span></div></div><div class="qr-wrapper"><div class="qr-box"></div></div></div></div>' +
-          '<div class="card-footer"><span>' + esc(S.boot.year.name) + '</span><span class="brand">' + esc(x.st_id) + '</span></div>';
+          '<div class="card-footer"><span>' + A.ltr(esc(S.boot.year.name)) + '</span><span class="brand">' + esc(x.st_id) + '</span></div>';
         page.appendChild(card);
         new window.QRCode(card.querySelector('.qr-box'), { text: x.st_id, width: 190, height: 190, colorDark: '#000000', colorLight: '#ffffff', correctLevel: window.QRCode.CorrectLevel.M });
         var t = card.querySelector('.student-name-text'), w = card.querySelector('.student-name-container'), fs = 20;
@@ -426,7 +426,7 @@
     if (ent === 'courses') return f(D.courses, 'c_id', 'c_name');
     if (ent === 'instructors') return f(M.meta.instructors, 'ins_id', 'ins_name');
     if (ent === 'departments') return f(M.meta.departments, 'dept_id', 'dept_name');
-    if (ent === 'years') return f(M.meta.years, 'year_id', 'year_name');
+    if (ent === 'years') return A.ltr(f(M.meta.years, 'year_id', 'year_name'));
     return ent === 'teaching' ? 'هذا الإسناد' : 'هذا السجل';
   }
 
@@ -565,8 +565,8 @@
     },
     aArchive: function (el) {
       var back = !!el.dataset.restore, y = M.meta.years.filter(function (x) { return x.year_id === el.dataset.id; })[0] || {};
-      var msg = back ? 'إرجاع السنة ' + y.year_name + ' من الأرشيف إلى الأوراق الحالية؟'
-                     : 'أرشفة السنة ' + y.year_name + '؟\nتُنقل ' + (y.n_sessions || 0) + ' محاضرة مع غياباتها وإسنادها إلى أوراق الأرشيف في الشيت.\nلا يُحذف شيء، ويمكن إرجاعها لاحقاً.';
+      var msg = back ? 'إرجاع السنة ' + A.ltr(y.year_name) + ' من الأرشيف إلى الأوراق الحالية؟'
+                     : 'أرشفة السنة ' + A.ltr(y.year_name) + '؟\nتُنقل ' + (y.n_sessions || 0) + ' محاضرة مع غياباتها وإسنادها إلى أوراق الأرشيف في الشيت.\nلا يُحذف شيء، ويمكن إرجاعها لاحقاً.';
       A.confirmBox(msg, back ? 'إرجاع' : 'أرشفة').then(function (ok) {
         if (!ok) return;
         el.disabled = true; toast('جاري النقل، قد يستغرق دقيقة...', 'info', 60000);

@@ -23,6 +23,8 @@
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
     });
   }
+  // يمنع انعكاس الأرقام مثل 2026-2027 داخل النص العربي
+  function ltr(s) { return '\u2066' + s + '\u2069'; }
   function norm(s) { return String(s === undefined || s === null ? '' : s).trim().toLowerCase(); }
   function num(v) { var n = Number(v); return isFinite(n) ? n : 0; }
   function today() { var d = new Date(); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
@@ -184,7 +186,7 @@
   }
   function paintTop() {
     if (!$('#topSub') || !S.boot) return;
-    $('#topSub').textContent = S.boot.settings.college_name + ' · ' + S.boot.year.name;
+    $('#topSub').textContent = S.boot.settings.college_name + ' · ' + ltr(S.boot.year.name);
     var n = $('#net'), off = !navigator.onLine;
     n.className = 'net' + (off ? ' off' : (S.queue.length ? '' : ' hide'));
     n.textContent = off ? 'غير متصل' : (S.queue.length ? 'بانتظار الإرسال: ' + S.queue.length : '');
@@ -240,11 +242,11 @@
       if (!ok) hidden++;
       return ok;
     });
-    var h = '<div class="card hello"><h2>مرحباً، ' + esc(b.user.name) + '</h2><div class="muted">السنة الدراسية ' + esc(b.year.name) +
+    var h = '<div class="card hello"><h2>مرحباً، ' + esc(b.user.name) + '</h2><div class="muted">السنة الدراسية ' + ltr(esc(b.year.name)) +
             ' · الفصل ' + esc(cur) + '</div></div>';
     if (S.draft && teach(S.draft.t_id)) {
       var dt = teach(S.draft.t_id);
-      h += '<div class="note warn"><b>لديك محاضرة لم تُرسل بعد:</b> ' + esc(dt.name) + ' (' + esc(S.draft.date) + ')' +
+      h += '<div class="note warn"><b>لديك محاضرة لم تُرسل بعد:</b> ' + esc(dt.name) + ' (' + ltr(esc(S.draft.date)) + ')' +
            '<div class="row" style="margin-top:8px"><button class="btn sm ok" data-go="#/scan">متابعة</button><button class="btn sm ghost" data-act="dropDraft">تجاهلها</button></div></div>';
     }
     h += queueBox();
@@ -445,7 +447,7 @@
     if (!c) return;
     var payload = draftPayload(c);
     payload.force = !!force;
-    var label = c.t.name + ' · شعبة ' + c.d.section + ' · ' + c.d.type + ' · ' + c.d.date;
+    var label = c.t.name + ' · شعبة ' + c.d.section + ' · ' + c.d.type + ' · ' + ltr(c.d.date);
     if (b) { b.disabled = true; b.textContent = 'جاري الإرسال...'; }
     var done = function () { S.draft = null; store.del('draft'); go('#/home'); };
     api('saveSession', { payload: payload }).then(function (r) {
@@ -732,7 +734,7 @@
   });
 
   // ما تحتاجه لوحة الإدارة من هذا الملف
-  window.App = { S: S, api: api, esc: esc, norm: norm, num: num, fmt: fmt, toast: toast, fail: fail, modal: modal, closeModal: closeModal, confirmBox: confirmBox,
+  window.App = { S: S, api: api, esc: esc, ltr: ltr, norm: norm, num: num, fmt: fmt, toast: toast, fail: fail, modal: modal, closeModal: closeModal, confirmBox: confirmBox,
                  mount: mount, title: title, loading: loading, loadScript: loadScript, loadCss: loadCss, exportXlsx: exportXlsx, store: store, go: go, render: render,
                  denom: denom, level: level, levelName: levelName, levelChip: levelChip, counted: counted, sessCard: sessCard, refreshBoot: refreshBoot, ROLE: ROLE };
 

@@ -1,6 +1,6 @@
 /* عامل الخدمة: يجعل النظام يفتح فوراً ويعمل بدون إنترنت، ويجلب التحديثات تلقائياً.
    عند تعديل أي ملف في المستودع غيّر رقم النسخة هنا ليصل التحديث للجميع. */
-var CACHE = 'absence-v2.3.1';
+var CACHE = 'absence-v2.3.2';
 var SHELL = ['./', 'index.html', 'css/app.css', 'js/config.js', 'js/app.js', 'js/admin.js', 'css/cards.css',
   'img/logo.jpg', 'img/icon-192.png', 'manifest.json', 'lib/html5-qrcode.min.js',
   'fonts/tajawal-arabic-400-normal.woff2', 'fonts/tajawal-arabic-500-normal.woff2', 'fonts/tajawal-arabic-700-normal.woff2',
