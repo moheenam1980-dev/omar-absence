@@ -748,5 +748,14 @@
 
   if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
     window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });
+    // عند وصول نسخة جديدة من النظام تُحدَّث الصفحة مرة واحدة تلقائياً (إلا أثناء المسح أو المراجعة)
+    if (navigator.serviceWorker.controller) {
+      var swReloaded = false;
+      navigator.serviceWorker.addEventListener('controllerchange', function () {
+        var pg = route()[0];
+        if (swReloaded || pg === 'scan' || pg === 'review') return;
+        swReloaded = true; location.reload();
+      });
+    }
   }
 })();
