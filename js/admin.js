@@ -303,7 +303,7 @@
         if (i % 6 === 0) { page = document.createElement('div'); page.className = 'a4-page'; box.appendChild(page); }
         var card = document.createElement('div');
         card.className = 'id-card';
-        card.innerHTML = '<div class="card-header"><div class="card-logo"><img src="img/logo.jpg" alt=""></div><div class="card-titles"><div class="uni-title">' + esc(s.university_name) +
+        card.innerHTML = '<div class="card-header"><div class="card-titles"><div class="uni-title">' + esc(s.university_name) +
           '</div><div class="inst-title">' + esc(s.college_name) + '</div><div class="dept-title">' + esc(dept) + '</div></div></div><div class="card-accent"></div>' +
           '<div class="card-body"><div class="student-name-container"><span class="student-name-text">' + esc(x.st_name) + '</span></div><div class="card-bottom"><div class="meta-details">' +
           '<div class="meta-badge"><span class="k">المرحلة</span><span class="v">' + esc(x.st_stage) + '</span></div><div class="meta-badge"><span class="k">الشعبة</span><span class="v">' + esc(x.st_section) + '</span></div>' +
