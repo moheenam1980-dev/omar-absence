@@ -211,14 +211,23 @@
     return Promise.resolve();
   };
   VIEW.years = function () {
-    frame('<div class="note warn">تغيير السنة الحالية يبدأ سجلاً جديداً للمحاضرات والإسناد. بيانات السنة السابقة تبقى محفوظة في الشيت.</div>' +
-      '<div class="toolbar"><button class="btn sm" data-act="aAdd" data-e="years">إضافة سنة دراسية</button></div>' +
-      table(['السنة الدراسية', 'الحالة', ''], M.meta.years.map(function (y) {
-        return '<tr><td class="num">' + esc(y.year_name) + '</td><td>' + (y.active === 'نعم' ? '<span class="chip ok">الحالية</span>' : '') + '</td><td><div class="acts">' +
-               (y.active === 'نعم' ? '' : '<button class="icon-btn" data-act="aSetYear" data-id="' + esc(y.year_id) + '">اجعلها الحالية</button>') +
-               '<button class="icon-btn" data-act="aEdit" data-e="years" data-id="' + esc(y.year_id) + '">تعديل</button><button class="icon-btn del" data-act="aDel" data-e="years" data-id="' + esc(y.year_id) + '">حذف</button></div></td></tr>';
-      })));
-    return Promise.resolve();
+    return api('list', { entities: ['years'], counts: 1 }).then(function (d) {
+      M.meta.years = d.years;
+      frame('<div class="note warn">تغيير السنة الحالية يبدأ سجلاً جديداً للمحاضرات والإسناد. بيانات السنة السابقة تبقى محفوظة في الشيت.</div>' +
+        '<div class="note"><b>الأرشفة:</b> تنقل محاضرات سنة سابقة وغياباتها وإسنادها إلى أوراق الأرشيف في الشيت (arch_sessions وأخواتها)، ' +
+        'فتبقى الأوراق الحالية صغيرة ويبقى النظام سريعاً. لا يُحذف شيء، ويمكن إرجاع السنة في أي وقت. يُنصح بأرشفة كل سنة بعد انتهائها وتسليم نتائجها.</div>' +
+        '<div class="toolbar"><button class="btn sm" data-act="aAdd" data-e="years">إضافة سنة دراسية</button></div>' +
+        table(['السنة الدراسية', 'الحالة', 'المحاضرات', ''], d.years.map(function (y) {
+          var cur = y.active === 'نعم', arc = y.active === 'مؤرشفة', b = '';
+          if (!cur && !arc) b += '<button class="icon-btn" data-act="aSetYear" data-id="' + esc(y.year_id) + '">اجعلها الحالية</button>' +
+                                 '<button class="icon-btn" data-act="aArchive" data-id="' + esc(y.year_id) + '">أرشفة</button>';
+          if (arc) b += '<button class="icon-btn" data-act="aArchive" data-restore="1" data-id="' + esc(y.year_id) + '">إرجاع من الأرشيف</button>';
+          if (!arc) b += '<button class="icon-btn" data-act="aEdit" data-e="years" data-id="' + esc(y.year_id) + '">تعديل</button>';
+          if (!cur && !arc) b += '<button class="icon-btn del" data-act="aDel" data-e="years" data-id="' + esc(y.year_id) + '">حذف</button>';
+          return '<tr><td class="num">' + esc(y.year_name) + '</td><td>' + (cur ? '<span class="chip ok">الحالية</span>' : arc ? '<span class="chip">مؤرشفة</span>' : '') +
+                 '</td><td>' + esc(y.n_sessions) + '</td><td><div class="acts">' + b + '</div></td></tr>';
+        })));
+    });
   };
   VIEW.settings = function () {
     var s = S.boot.settings;
@@ -303,7 +312,7 @@
         if (i % 6 === 0) { page = document.createElement('div'); page.className = 'a4-page'; box.appendChild(page); }
         var card = document.createElement('div');
         card.className = 'id-card';
-        card.innerHTML = '<div class="card-header"><div class="card-titles"><div class="uni-title">' + esc(s.university_name) +
+        card.innerHTML = '<div class="card-header"><div class="card-logo"><img src="img/logo.jpg" alt=""></div><div class="card-titles"><div class="uni-title">' + esc(s.university_name) +
           '</div><div class="inst-title">' + esc(s.college_name) + '</div><div class="dept-title">' + esc(dept) + '</div></div></div><div class="card-accent"></div>' +
           '<div class="card-body"><div class="student-name-container"><span class="student-name-text">' + esc(x.st_name) + '</span></div><div class="card-bottom"><div class="meta-details">' +
           '<div class="meta-badge"><span class="k">المرحلة</span><span class="v">' + esc(x.st_stage) + '</span></div><div class="meta-badge"><span class="k">الشعبة</span><span class="v">' + esc(x.st_section) + '</span></div>' +
@@ -510,7 +519,7 @@
           if (r.errors.length) h += '<div class="note bad"><b>سجلات لم تُرفع (' + r.errors.length + (r.errors.length >= 60 ? '+' : '') + '):</b><br>' + r.errors.map(esc).join('<br>') + '</div>';
           if (r.creds && r.creds.length) {
             M.creds = r.creds;
-            h += '<div class="note warn">احفظ كلمات المرور الآن، لن تظهر مرة أخرى.</div><button class="btn sm soft" data-act="aXlsCreds">تحميل الحسابات كملف إكسل</button>' +
+            h += '<div class="note warn">كلمات المرور محفوظة في تبويب «الحسابات» وفي ورقة instructors.</div><button class="btn sm soft" data-act="aXlsCreds">تحميل الحسابات كملف إكسل</button>' +
                  table(['الاسم', 'اسم المستخدم', 'كلمة المرور'], r.creds.map(function (c) { return '<tr><td class="w">' + esc(c[0]) + '</td><td class="num">' + esc(c[1]) + '</td><td class="num">' + esc(c[2]) + '</td></tr>'; }));
           }
           A.modal(h + '<button class="btn ghost block" style="margin-top:12px" data-act="aImportDone" data-e="' + ent + '">تم</button>');
@@ -552,6 +561,19 @@
     aSetYear: function (el) {
       A.confirmBox('جعل هذه السنة هي السنة الدراسية الحالية؟\nستحتاج إلى إسناد المواد للتدريسيين من جديد لهذه السنة.', 'نعم').then(function (y) {
         if (y) api('setYear', { year_id: el.dataset.id }).then(function () { M.data = {}; toast('تم تغيير السنة الحالية', 'ok'); return changed([], true); }).catch(fail);
+      });
+    },
+    aArchive: function (el) {
+      var back = !!el.dataset.restore, y = M.meta.years.filter(function (x) { return x.year_id === el.dataset.id; })[0] || {};
+      var msg = back ? 'إرجاع السنة ' + y.year_name + ' من الأرشيف إلى الأوراق الحالية؟'
+                     : 'أرشفة السنة ' + y.year_name + '؟\nتُنقل ' + (y.n_sessions || 0) + ' محاضرة مع غياباتها وإسنادها إلى أوراق الأرشيف في الشيت.\nلا يُحذف شيء، ويمكن إرجاعها لاحقاً.';
+      A.confirmBox(msg, back ? 'إرجاع' : 'أرشفة').then(function (ok) {
+        if (!ok) return;
+        el.disabled = true; toast('جاري النقل، قد يستغرق دقيقة...', 'info', 60000);
+        api('archiveYear', { year_id: el.dataset.id, restore: back }).then(function (r) {
+          toast((back ? 'تم الإرجاع: ' : 'تمت الأرشفة: ') + r.sessions + ' محاضرة، ' + r.absences + ' سجل غياب', 'ok', 5000);
+          return loadMeta(true).then(function () { render(['years']); });
+        }).catch(function (e) { el.disabled = false; fail(e); });
       });
     },
     aDeptReport: function (el) {

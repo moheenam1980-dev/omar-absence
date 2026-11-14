@@ -76,6 +76,7 @@
     }).then(function (j) {
       if (!j.ok) {
         var e = new Error(j.error || 'حدث خطأ'); e.code = j.code;
+        if (j.code === 'BUSY') e.net = true;      // يُعامل كانقطاع مؤقت: تُحفظ المحاضرة وتُعاد المحاولة
         if (j.code === 'AUTH') logout(true);
         throw e;
       }
@@ -84,22 +85,11 @@
   }
   function fail(e) { toast(e.message || String(e), 'bad', 4500); }
 
-  /* اسم الكلية والجامعة يأتيان من «الإعدادات» ويُحفظان على الجهاز ليظهرا في شاشة الدخول أيضاً */
-  function brand() {
-    var s = (S.boot && S.boot.settings) || store.get('brand', {}) || {};
-    return { college: s.college_name || 'كلية علوم الحاسوب والرياضيات', uni: s.university_name || '' };
-  }
-  function applyBrand() {
-    var b = brand();
-    document.title = 'نظام غيابات الطلبة - ' + b.college;
-  }
   function setBoot(b, keep) {
-    if (b && b.settings) store.set('brand', { college_name: b.settings.college_name, university_name: b.settings.university_name });
     S.boot = b; S.byId = {}; S.deptName = {};
     b.students.forEach(function (a) { S.byId[a[0]] = { id: a[0], name: a[1], dept: a[2], stage: a[3], section: a[4], study: a[5] }; });
     b.depts.forEach(function (d) { S.deptName[d.id] = d.name; });
     if (!keep) store.set('boot', b);
-    applyBrand();
   }
   function refreshBoot() {
     return api('boot').then(function (b) {
@@ -188,7 +178,7 @@
   function ensureShell() {
     if ($('#view')) return;
     $('#app').innerHTML =
-      '<div class="shell"><header class="topbar"><div class="grow"><div class="t1">نظام غيابات الطلبة</div>' +
+      '<div class="shell"><header class="topbar"><img src="img/logo.jpg" alt="شعار الكلية"><div class="grow"><div class="t1">نظام غيابات الطلبة</div>' +
       '<div class="t2" id="topSub"></div></div><span class="net hide" id="net"></span></header><main id="view"></main></div><nav class="nav" id="nav"></nav>';
     paintTop();
   }
@@ -222,15 +212,12 @@
 
   /* ---------------- الدخول ---------------- */
   function viewLogin() {
-    var bn = brand();
-    applyBrand();
     $('#app').innerHTML =
-      '<div class="login"><div class="login-card"><div class="login-college">' + esc(bn.college) + '</div>' +
-      (bn.uni ? '<div class="login-uni">' + esc(bn.uni) + '</div>' : '') + '<div class="login-line"></div>' +
-      '<h1>نظام غيابات الطلبة</h1><div class="sub">تسجيل الدخول</div>' +
-      '<form id="loginForm" autocomplete="off" action="javascript:void(0)"><label class="f" for="lu">اسم المستخدم</label>' +
-      '<input class="inp" id="lu" name="abs_u_' + Date.now() + '" type="text" dir="ltr autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other" required>' +
-      '<label class="f" for="lp">كلمة المرور</label><input class="inp pw" id="lp" name="abs_k_' + Date.now() + '" type="text" dir="ltr autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other" required>' +
+      '<div class="login"><div class="login-card"><img src="img/logo.jpg" alt="شعار كلية علوم الحاسوب والرياضيات">' +
+      '<h1>نظام غيابات الطلبة</h1><div class="sub">كلية علوم الحاسوب والرياضيات · جامعة الموصل</div>' +
+      '<form id="loginForm" autocomplete="on"><label class="f" for="lu">اسم المستخدم</label>' +
+      '<input class="inp" id="lu" dir="ltr" autocomplete="username" autocapitalize="none" spellcheck="false" required>' +
+      '<label class="f" for="lp">كلمة المرور</label><input class="inp" id="lp" type="password" dir="ltr" autocomplete="current-password" required>' +
       '<button class="btn block" id="lb" style="margin-top:16px">دخول</button></form><div class="credit">designed by OMAR INAAM</div></div></div>';
     $('#loginForm').onsubmit = function (ev) {
       ev.preventDefault();
@@ -472,7 +459,8 @@
       if (e.net) {
         S.queue.push({ payload: payload, label: label });
         store.set('queue', S.queue);
-        toast('لا يوجد اتصال. حُفظت المحاضرة في الجهاز وستُرسل تلقائياً عند عودة الإنترنت', 'info', 5000);
+        toast(e.code === 'BUSY' ? 'الخادم مشغول الآن. حُفظت المحاضرة في الجهاز وستُرسل تلقائياً خلال دقيقة'
+                                : 'لا يوجد اتصال. حُفظت المحاضرة في الجهاز وستُرسل تلقائياً عند عودة الإنترنت', 'info', 5000);
         done(); paintTop();
       } else { if (b) { b.disabled = false; b.textContent = 'تأكيد وإرسال'; } fail(e); }
     });
@@ -611,9 +599,9 @@
     var u = S.boot.user;
     mount(title('حسابي') + '<div class="card"><h3>' + esc(u.name) + '</h3><div class="wrap" style="margin-top:6px"><span class="chip">' + esc(ROLE[u.role] || u.role) + '</span>' +
       (S.deptName[u.dept_id] ? '<span class="chip teal">' + esc(S.deptName[u.dept_id]) + '</span>' : '') + '<span class="chip num">' + esc(u.username) + '</span></div></div>' +
-      '<div class="card"><h3>تغيير كلمة المرور</h3><form id="pwForm" autocomplete="off" action="javascript:void(0)"><label class="f" for="pw0">كلمة المرور الحالية</label><input class="inp pw" type="text" id="pw0" dir="ltr" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other" required>' +
-      '<label class="f" for="pw1">كلمة المرور الجديدة (4 أحرف على الأقل)</label><input class="inp pw" type="text" id="pw1" dir="ltr" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other" minlength="4" required>' +
-      '<label class="f" for="pw2">تأكيد كلمة المرور الجديدة</label><input class="inp pw" type="text" id="pw2" dir="ltr" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other" required>' +
+      '<div class="card"><h3>تغيير كلمة المرور</h3><form id="pwForm"><label class="f" for="pw0">كلمة المرور الحالية</label><input class="inp" type="password" id="pw0" dir="ltr" autocomplete="current-password" required>' +
+      '<label class="f" for="pw1">كلمة المرور الجديدة (4 أحرف على الأقل)</label><input class="inp" type="password" id="pw1" dir="ltr" autocomplete="new-password" minlength="4" required>' +
+      '<label class="f" for="pw2">تأكيد كلمة المرور الجديدة</label><input class="inp" type="password" id="pw2" dir="ltr" autocomplete="new-password" required>' +
       '<button class="btn block" style="margin-top:14px">حفظ كلمة المرور</button></form></div>' +
       '<div class="card"><button class="btn soft block" data-act="refresh">تحديث البيانات من الخادم</button>' +
       '<div class="muted" style="font-size:13.5px;margin:8px 0 12px">استخدمه إذا أُضيف طلبة أو مواد جديدة ولم تظهر عندك.</div>' +
@@ -730,7 +718,13 @@
     } else { ev.preventDefault(); go(el.dataset.go); }
   });
   window.addEventListener('hashchange', render);
+  // إيقاف الكاميرا أثناء تشغيلها يولّد تحذيراً غير مؤثر من المتصفح
+  window.addEventListener('unhandledrejection', function (e) {
+    var m = String((e.reason && e.reason.message) || e.reason || '');
+    if (/play\(\) request was interrupted|media was removed/.test(m)) e.preventDefault();
+  });
   window.addEventListener('online', function () { paintTop(); flushQueue(); });
+  setInterval(function () { if (S.queue.length && navigator.onLine && !document.hidden) flushQueue(); }, 60000);   // إعادة المحاولة كل دقيقة
   window.addEventListener('offline', paintTop);
   document.addEventListener('visibilitychange', function () {
     if (document.hidden) { if (scanner) stopCam(); }
