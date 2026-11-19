@@ -44,9 +44,8 @@
   overflow: hidden;
 }
 
-/* العلامة المائية (أُلغيت: البطاقة بدون شعار) */
+/* العلامة المائية: شعار الكلية */
 .id-card::before {
-  display: none;
   content: "";
   position: absolute;
   width: 62%;
@@ -84,7 +83,7 @@
 }
 .card-logo img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; display: block; }
 
-.card-titles { line-height: 1.25; text-align: center; flex: 1; }
+.card-titles { line-height: 1.25; text-align: right; }
 .uni-title { font-size: 12.5px; font-weight: 500; color: rgba(255, 255, 255, 0.78); }
 .inst-title { font-size: 17px; font-weight: 500; color: #ffffff; }
 .dept-title { font-size: 14.5px; font-weight: 500; color: #a8f0f7; }
@@ -195,7 +194,7 @@
   flex-direction: column;
   align-items: center;
   background: #ffffff;
-  padding: 6px;
+  padding: 10px; /* هامش أبيض حول الرمز (Quiet zone) يساعد الكاميرا على قراءته بسرعة */
   border-radius: 12px;
   border: 1.4px solid var(--indigo);
   flex-shrink: 0;

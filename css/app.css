@@ -60,7 +60,6 @@ main#view.wide { max-width: 1180px; }
   .nav a { flex: none; flex-direction: row; gap: 10px; padding: 11px 12px; border-radius: 12px; font-size: 15px; min-height: 0; justify-content: flex-start; }
   .nav a.on { background: #eeecfb; }
   .shell { padding-inline-start: 190px; }
-  .shell > .topbar { margin-inline-start: -190px; }
   main#view { padding-bottom: 40px; }
 }
 

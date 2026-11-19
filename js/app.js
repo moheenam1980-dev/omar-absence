@@ -13,8 +13,6 @@
   };
   var S = { token: store.get('token', ''), boot: null, queue: store.get('queue', []), draft: store.get('draft', null), byId: {}, deptName: {}, showAll: false };
   var ROLE = { admin: 'مدير النظام', head: 'رئيس / مقرر قسم', instructor: 'تدريسي' };
-  // مدير النظام موظف إداري: إذا لم تُسند إليه مواد لا تظهر له صفحات التدريسي
-  function staffOnly() { return S.boot && S.boot.user.role === 'admin' && !S.boot.teaching.length; }
 
   /* ---------------- أدوات ---------------- */
   var $ = function (sel, root) { return (root || document).querySelector(sel); };
@@ -23,8 +21,6 @@
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
     });
   }
-  // يمنع انعكاس الأرقام مثل 2026-2027 داخل النص العربي
-  function ltr(s) { return '\u2066' + s + '\u2069'; }
   function norm(s) { return String(s === undefined || s === null ? '' : s).trim().toLowerCase(); }
   function num(v) { var n = Number(v); return isFinite(n) ? n : 0; }
   function today() { var d = new Date(); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
@@ -78,7 +74,6 @@
     }).then(function (j) {
       if (!j.ok) {
         var e = new Error(j.error || 'حدث خطأ'); e.code = j.code;
-        if (j.code === 'BUSY') e.net = true;      // يُعامل كانقطاع مؤقت: تُحفظ المحاضرة وتُعاد المحاولة
         if (j.code === 'AUTH') logout(true);
         throw e;
       }
@@ -89,7 +84,8 @@
 
   function setBoot(b, keep) {
     S.boot = b; S.byId = {}; S.deptName = {};
-    b.students.forEach(function (a) { S.byId[a[0]] = { id: a[0], name: a[1], dept: a[2], stage: a[3], section: a[4], study: a[5] }; });
+    b.students.forEach(function (a) { S.byId[a[0]] = { id: a[0], name: a[1], dept: a[2] }; });
+    if (!b.enrolled) b.enrolled = [];
     b.depts.forEach(function (d) { S.deptName[d.id] = d.name; });
     if (!keep) store.set('boot', b);
   }
@@ -112,25 +108,17 @@
 
   /* ---------------- بيانات مشتقة ---------------- */
   function teach(id) { return (S.boot.teaching || []).filter(function (t) { return t.t_id === id; })[0]; }
-  function roster(t, section) {
-    var sec = norm(section), ex = {}, out = [];
-    S.boot.extras.forEach(function (e) {
-      if (e[1] === t.c_id && (e[2] === '' || norm(e[2]) === sec) && (e[3] === '' || e[3] === t.study)) ex[e[0]] = 1;
+  /** طلبة المحاضرة = الطلبة الذين اختاروا هذه المادة فقط (نظام بولونيا) */
+  function roster(t) {
+    var seen = {}, out = [];
+    S.boot.enrolled.forEach(function (e) {
+      var s = S.byId[e[0]];
+      if (s && !seen[s.id] && e[1] === t.c_id && (!e[2] || !t.study || e[2] === t.study)) { seen[s.id] = 1; out.push(s); }
     });
-    for (var id in S.byId) {
-      var s = S.byId[id];
-      if ((s.dept === t.dept_id && s.stage === t.stage && s.study === t.study && norm(s.section) === sec) || ex[id]) out.push(s);
-    }
     return out.sort(byName);
   }
-  function sectionsOf(t) {
-    if (t.section) return [t.section];
-    var m = {};
-    for (var id in S.byId) { var s = S.byId[id]; if (s.dept === t.dept_id && s.stage === t.stage && s.study === t.study) m[s.section] = 1; }
-    return Object.keys(m).sort();
-  }
-  function tLabel(t, section) {
-    return (S.deptName[t.dept_id] || '') + ' · المرحلة ' + t.stage + ' · شعبة ' + (section || t.section || 'كل الشعب') + ' · ' + t.study;
+  function tLabel(t) {
+    return (S.deptName[t.dept_id] || '') + ' · المرحلة ' + t.stage + (t.study ? ' · ' + t.study : '');
   }
   function denom(c) { return num(c.total_hours) || num(c.w_hours) * 15 || 0; }
   function level(pct) {
@@ -186,13 +174,13 @@
   }
   function paintTop() {
     if (!$('#topSub') || !S.boot) return;
-    $('#topSub').textContent = S.boot.settings.college_name + ' · ' + ltr(S.boot.year.name);
+    $('#topSub').textContent = S.boot.settings.college_name + ' · ' + S.boot.year.name;
     var n = $('#net'), off = !navigator.onLine;
     n.className = 'net' + (off ? ' off' : (S.queue.length ? '' : ' hide'));
     n.textContent = off ? 'غير متصل' : (S.queue.length ? 'بانتظار الإرسال: ' + S.queue.length : '');
   }
   function paintNav(cur) {
-    var items = staffOnly() ? [] : [['home', 'الرئيسية', ICON.home], ['sessions', 'السجل', ICON.list]];
+    var items = [['home', 'الرئيسية', ICON.home], ['sessions', 'السجل', ICON.list]];
     if (isManager()) items.push(['admin', 'الإدارة', ICON.admin]);
     items.push(['account', 'حسابي', ICON.user]);
     $('#nav').innerHTML = items.map(function (i) {
@@ -242,11 +230,11 @@
       if (!ok) hidden++;
       return ok;
     });
-    var h = '<div class="card hello"><h2>مرحباً، ' + esc(b.user.name) + '</h2><div class="muted">السنة الدراسية ' + ltr(esc(b.year.name)) +
+    var h = '<div class="card hello"><h2>مرحباً، ' + esc(b.user.name) + '</h2><div class="muted">السنة الدراسية ' + esc(b.year.name) +
             ' · الفصل ' + esc(cur) + '</div></div>';
     if (S.draft && teach(S.draft.t_id)) {
       var dt = teach(S.draft.t_id);
-      h += '<div class="note warn"><b>لديك محاضرة لم تُرسل بعد:</b> ' + esc(dt.name) + ' (' + ltr(esc(S.draft.date)) + ')' +
+      h += '<div class="note warn"><b>لديك محاضرة لم تُرسل بعد:</b> ' + esc(dt.name) + ' (' + esc(S.draft.date) + ')' +
            '<div class="row" style="margin-top:8px"><button class="btn sm ok" data-go="#/scan">متابعة</button><button class="btn sm ghost" data-act="dropDraft">تجاهلها</button></div></div>';
     }
     h += queueBox();
@@ -255,8 +243,8 @@
     }
     list.forEach(function (t) {
       h += '<div class="card course"><h3>' + esc(t.name) + '</h3><div class="meta wrap"><span class="chip">' + esc(S.deptName[t.dept_id] || '') + '</span>' +
-           '<span class="chip teal">المرحلة ' + esc(t.stage) + '</span><span class="chip teal">' + (t.section ? 'شعبة ' + esc(t.section) : 'كل الشعب') + '</span>' +
-           '<span class="chip gold">' + esc(t.study) + '</span></div><div class="row"><button class="btn ok" data-go="#/take/' + esc(t.t_id) + '">تسجيل الغياب</button>' +
+           '<span class="chip teal">المرحلة ' + esc(t.stage) + '</span><span class="chip teal">' + roster(t).length + ' طالب مسجل</span>' +
+           (t.study ? '<span class="chip gold">' + esc(t.study) + '</span>' : '') + '</div><div class="row"><button class="btn ok" data-go="#/take/' + esc(t.t_id) + '">تسجيل الغياب</button>' +
            '<button class="btn ghost" data-go="#/report/' + esc(t.t_id) + '" style="flex:.6">التقرير</button></div></div>';
     });
     if (hidden || S.showAll) h += '<button class="btn soft block" data-act="toggleAll">' + (S.showAll ? 'إظهار مواد الفصل الحالي فقط' : 'إظهار مواد الفصل الآخر (' + hidden + ')') + '</button>';
@@ -277,26 +265,20 @@
   function viewTake(tid) {
     var t = teach(tid);
     if (!t) return go('#/home');
-    var secs = sectionsOf(t), defH = num(S.boot.settings.default_hours) || 2, opts = '';
+    var n = roster(t).length, defH = num(S.boot.settings.default_hours) || 2, opts = '';
     for (var i = 1; i <= 6; i++) opts += '<option' + (i === defH ? ' selected' : '') + '>' + i + '</option>';
     var h = title('محاضرة جديدة', '#/home') + '<div class="card"><h3>' + esc(t.name) + '</h3><div class="muted" style="font-size:14px">' + esc(tLabel(t)) + '</div>';
-    if (!secs.length) {
-      h += '</div><div class="note bad">لا يوجد طلبة مسجلون لهذه المادة (القسم / المرحلة / نوع الدراسة). راجع مقرر القسم لرفع قائمة الطلبة.</div>';
+    if (!n) {
+      h += '</div><div class="note bad">لا يوجد طلبة اختاروا هذه المادة بعد. راجع مقرر القسم لتسجيل اختيار الطلبة للمواد.</div>';
       return mount(h, 'home');
     }
-    h += '<label class="f" for="tkSec">الشعبة</label><select class="inp" id="tkSec">' + (secs.length > 1 ? '<option value="">اختر الشعبة</option>' : '') +
-         secs.map(function (s) { return '<option>' + esc(s) + '</option>'; }).join('') + '</select>' +
-         '<label class="f">نوع المحاضرة</label><div class="seg" id="tkType"><button type="button" class="on" data-v="نظري">نظري</button><button type="button" data-v="عملي">عملي</button></div>' +
+    h += '<label class="f">نوع المحاضرة</label><div class="seg" id="tkType"><button type="button" class="on" data-v="نظري">نظري</button><button type="button" data-v="عملي">عملي</button></div>' +
          '<div class="row"><div><label class="f" for="tkDate">التاريخ</label><input class="inp" type="date" id="tkDate" value="' + today() + '" max="' + today() + '"></div>' +
          '<div><label class="f" for="tkHours">عدد الساعات</label><select class="inp" id="tkHours">' + opts + '</select></div></div>' +
-         '<div class="muted" id="tkCount" style="margin-top:10px;font-size:14px"></div></div>' +
+         '<div class="muted" style="margin-top:10px;font-size:14px">عدد الطلبة المسجلين في المادة: ' + n +
+         '<br>الطالب الذي لم يختر هذه المادة لا يظهر في القائمة ولا يُسجَّل عليه غياب.</div></div>' +
          '<button class="btn ok block" data-act="startTake" data-t="' + esc(tid) + '">بدء المسح بالكاميرا</button>';
     mount(h, 'home');
-    var upd = function () {
-      var sec = $('#tkSec').value;
-      $('#tkCount').textContent = sec ? 'عدد طلبة الشعبة: ' + roster(t, sec).length : '';
-    };
-    $('#tkSec').onchange = upd; upd();
     $('#tkType').onclick = function (e) {
       var bt = e.target.closest('button'); if (!bt) return;
       [].forEach.call(this.children, function (c) { c.classList.toggle('on', c === bt); });
@@ -308,20 +290,20 @@
   function draftCtx() {
     var d = S.draft, t = d && teach(d.t_id);
     if (!t) return null;
-    var r = roster(t, d.section), set = {};
+    var r = roster(t), set = {};
     r.forEach(function (s) { set[s.id] = 1; });
     return { d: d, t: t, roster: r, set: set };
   }
   function saveDraft() { store.set('draft', S.draft); }
   function headBox(c) {
-    return '<div class="card scan-head"><b>' + esc(c.t.name) + '</b> · ' + esc(c.d.type) + '<br>' + esc(tLabel(c.t, c.d.section)) +
+    return '<div class="card scan-head"><b>' + esc(c.t.name) + '</b> · ' + esc(c.d.type) + '<br>' + esc(tLabel(c.t)) +
            '<br><span class="num">' + esc(c.d.date) + '</span> · ' + esc(c.d.hours) + ' ساعة</div>';
   }
   function viewScan() {
     DR = draftCtx();
     if (!DR) return go('#/home');
     mount(title('مسح هويات الطلبة', '#/home') +
-      '<div class="card scan-head" style="padding:10px 14px"><b>' + esc(DR.t.name) + '</b> · ' + esc(DR.d.type) + ' · شعبة ' + esc(DR.d.section) + ' · ' + esc(DR.d.hours) + ' ساعة</div>' +
+      '<div class="card scan-head" style="padding:10px 14px"><b>' + esc(DR.t.name) + '</b> · ' + esc(DR.d.type) + ' · ' + esc(DR.d.hours) + ' ساعة</div>' +
       '<div class="card"><div id="reader"><div class="cam-off">جاري تشغيل الكاميرا...</div></div>' +
       '<div class="last-scan" id="lastScan" style="margin-top:12px">وجّه الكاميرا نحو رمز QR في هوية الطالب</div>' +
       '<div class="counter"><div class="p"><b id="cP">0</b><span>حاضر</span></div><div class="a"><b id="cA">0</b><span>لم يُمسح</span></div><div><b id="cT">0</b><span>العدد الكلي</span></div></div>' +
@@ -340,30 +322,64 @@
     var el = $('#lastScan');
     if (el) { el.textContent = text; el.className = 'last-scan ' + (ok ? 'ok' : 'bad'); }
   }
+  /** تنظيف النص المقروء: مسافات وأحرف خفية، أرقام عربية/فارسية، «.0» من الإكسل، بادئة مثل ID: */
+  function cleanCode(raw) {
+    return String(raw || '').replace(/[\u0000-\u001f\u007f​-‏‪-‮⁦-⁩﻿]/g, '')
+      .replace(/[٠-٩]/g, function (d) { return d.charCodeAt(0) - 0x0660; })
+      .replace(/[۰-۹]/g, function (d) { return d.charCodeAt(0) - 0x06f0; })
+      .trim().replace(/\.0+$/, '');
+  }
+  function findStudent(raw) {
+    var code = cleanCode(raw);
+    if (!code) return null;
+    if (S.byId[code]) return S.byId[code];
+    var low = code.toLowerCase();
+    for (var id in S.byId) if (id.toLowerCase() === low) return S.byId[id];
+    var dg = code.replace(/\D/g, '');
+    if (!dg) return null;
+    if (S.byId[dg]) return S.byId[dg];
+    // اختلاف الأصفار في بداية الرقم (مثلاً 0123 مقابل 123)
+    var nz = dg.replace(/^0+/, '');
+    for (var k in S.byId) if (k.replace(/\D/g, '').replace(/^0+/, '') === nz && nz) return S.byId[k];
+    return null;
+  }
   function addScan(raw) {
-    var code = String(raw || '').trim(), s = S.byId[code];
-    if (!s) { var dg = code.replace(/\D/g, ''); if (dg && S.byId[dg]) s = S.byId[dg]; }
-    if (!s) { beep(false); scanMsg('رمز غير معروف: ' + code.substr(0, 30), false); return; }
-    if (!DR.set[s.id]) { beep(false); scanMsg(s.name + ' ليس من طلبة هذه الشعبة', false); return; }
-    if (DR.d.present[s.id]) { beep(false); scanMsg('مسجَّل مسبقاً: ' + s.name, false); return; }
+    var s = findStudent(raw);
+    if (!s) { beep(false); scanMsg('رمز غير معروف أو الطالب غير مسجل في موادك: ' + cleanCode(raw).substr(0, 30), false); return; }
+    if (!DR.set[s.id]) { beep(false); scanMsg(s.name + ' لم يختر هذه المادة، لا يُسجَّل له حضور أو غياب فيها', false); return; }
+    if (DR.d.present[s.id]) { scanMsg('مسجَّل مسبقاً: ' + s.name, true); return; }
     DR.d.present[s.id] = 1; delete DR.d.exc[s.id];
     saveDraft(); beep(true); scanMsg('✔ ' + s.name, true); paintCount();
   }
+  var stopping = Promise.resolve();
   function startCam() {
     if (scanner || !$('#reader')) return;
-    loadScript('lib/html5-qrcode.min.js').then(function () {
+    // ننتظر انتهاء أي إيقاف سابق للكاميرا حتى لا يفشل التشغيل بخطأ «الكاميرا مستخدمة»
+    stopping.then(function () { return loadScript('lib/html5-qrcode.min.js'); }).then(function () {
       if (scanner || !$('#reader')) return;
       $('#reader').innerHTML = '';
       var F = window.Html5QrcodeSupportedFormats;
-      scanner = new window.Html5Qrcode('reader', { formatsToSupport: [F.QR_CODE, F.CODE_128], useBarCodeDetectorIfSupported: true, verbose: false });
-      return scanner.start({ facingMode: 'environment' },
-        { fps: 12, aspectRatio: 1.0, qrbox: function (w, h) { var s = Math.floor(Math.min(w, h) * 0.85); return { width: s, height: s }; } },
-        function (text) {
-          var now = Date.now();
-          if (text === lastCode && now - lastTime < 2500) return;
-          lastCode = text; lastTime = now;
-          addScan(text);
-        }, function () {});
+      scanner = new window.Html5Qrcode('reader', { formatsToSupport: [F.QR_CODE, F.CODE_128, F.CODE_39], useBarCodeDetectorIfSupported: true, verbose: false });
+      lastCode = ''; lastTime = 0;
+      // بدون aspectRatio: فرض صورة مربعة كان يخفّض دقة الكاميرا في كثير من الهواتف ويفشل في بعضها،
+      // فتصعب قراءة الرمز الصغير في الهوية. نطلب دقة أعلى بدلاً من ذلك.
+      var sc = scanner;
+      var onCode = function (text) {
+        // نفس الرمز أمام الكاميرا يُقرأ عشرات المرات في الثانية: لا يُحتسب مرة ثانية إلا إذا غاب عن الكاميرا ثانيتين
+        // (سابقاً كان يعيد القراءة كل 2.5 ثانية فيُطلق صوت خطأ «مسجل مسبقاً» على طالب صحيح)
+        var now = Date.now(), same = text === lastCode && now - lastTime < 2000;
+        lastCode = text; lastTime = now;
+        if (!same && DR) addScan(text);
+      };
+      var box = function (w, h) { var s = Math.max(120, Math.floor(Math.min(w, h) * 0.8)); return { width: s, height: s }; };
+      return sc.start({ facingMode: 'environment' },
+        { fps: 15, disableFlip: true, qrbox: box,
+          videoConstraints: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } } },
+        onCode, function () {}).catch(function () {
+          // بعض الهواتف ترفض طلب الدقة: نعيد المحاولة بالإعداد البسيط
+          if (scanner !== sc) return;
+          return sc.start({ facingMode: 'environment' }, { fps: 15, disableFlip: true, qrbox: box }, onCode, function () {});
+        });
     }).then(function () {
       if ($('#camBtn')) $('#camBtn').textContent = 'إيقاف الكاميرا';
       if (navigator.wakeLock) navigator.wakeLock.request('screen').then(function (w) { wake = w; }).catch(function () {});
@@ -379,10 +395,11 @@
     if (!scanner) return Promise.resolve();
     var s = scanner; scanner = null;
     // stop() ترمي خطأً مباشراً إذا لم تكن الكاميرا قد اشتغلت بعد، لذلك تُستدعى داخل وعد
-    return Promise.resolve().then(function () { return s.stop(); }).then(function () { s.clear(); }).catch(function () {}).then(function () {
-      if ($('#reader')) $('#reader').innerHTML = '<div class="cam-off">الكاميرا متوقفة</div>';
-      if ($('#camBtn')) $('#camBtn').textContent = 'تشغيل الكاميرا';
+    stopping = Promise.resolve().then(function () { return s.stop(); }).then(function () { s.clear(); }).catch(function () {}).then(function () {
+      if ($('#reader') && !scanner) $('#reader').innerHTML = '<div class="cam-off">الكاميرا متوقفة</div>';
+      if ($('#camBtn') && !scanner) $('#camBtn').textContent = 'تشغيل الكاميرا';
     });
+    return stopping;
   }
   function manualDialog() {
     var paint = function (q) {
@@ -439,7 +456,7 @@
           '<div class="sticky-actions"><button class="btn ghost" data-go="#/scan">رجوع للمسح</button><button class="btn ok" id="sendBtn" data-act="send">تأكيد وإرسال</button></div>', 'home');
   }
   function draftPayload(c) {
-    return { sid: c.d.sid, t_id: c.d.t_id, section: c.d.section, type: c.d.type, date: c.d.date, hours: c.d.hours,
+    return { sid: c.d.sid, t_id: c.d.t_id, type: c.d.type, date: c.d.date, hours: c.d.hours,
              abs: c.roster.filter(function (s) { return !c.d.present[s.id]; }).map(function (s) { return { id: s.id, status: c.d.exc[s.id] ? 'مجاز' : 'غائب' }; }) };
   }
   function sendDraft(force) {
@@ -447,13 +464,13 @@
     if (!c) return;
     var payload = draftPayload(c);
     payload.force = !!force;
-    var label = c.t.name + ' · شعبة ' + c.d.section + ' · ' + c.d.type + ' · ' + ltr(c.d.date);
+    var label = c.t.name + ' · ' + c.d.type + ' · ' + c.d.date;
     if (b) { b.disabled = true; b.textContent = 'جاري الإرسال...'; }
     var done = function () { S.draft = null; store.del('draft'); go('#/home'); };
     api('saveSession', { payload: payload }).then(function (r) {
       if (r.duplicate) {
         if (b) { b.disabled = false; b.textContent = 'تأكيد وإرسال'; }
-        return confirmBox('توجد محاضرة ' + c.d.type + ' مسجلة مسبقاً لهذه المادة والشعبة بنفس التاريخ.\nهل تريد تسجيل محاضرة ثانية؟', 'نعم، سجّلها').then(function (y) { if (y) sendDraft(true); });
+        return confirmBox('توجد محاضرة ' + c.d.type + ' مسجلة مسبقاً لهذه المادة بنفس التاريخ.\nهل تريد تسجيل محاضرة ثانية؟', 'نعم، سجّلها').then(function (y) { if (y) sendDraft(true); });
       }
       toast(r.already ? 'هذه المحاضرة مُرسلة مسبقاً' : 'تم الحفظ: ' + r.absent + ' غائب من ' + r.total, 'ok', 3500);
       done();
@@ -461,8 +478,7 @@
       if (e.net) {
         S.queue.push({ payload: payload, label: label });
         store.set('queue', S.queue);
-        toast(e.code === 'BUSY' ? 'الخادم مشغول الآن. حُفظت المحاضرة في الجهاز وستُرسل تلقائياً خلال دقيقة'
-                                : 'لا يوجد اتصال. حُفظت المحاضرة في الجهاز وستُرسل تلقائياً عند عودة الإنترنت', 'info', 5000);
+        toast('لا يوجد اتصال. حُفظت المحاضرة في الجهاز وستُرسل تلقائياً عند عودة الإنترنت', 'info', 5000);
         done(); paintTop();
       } else { if (b) { b.disabled = false; b.textContent = 'تأكيد وإرسال'; } fail(e); }
     });
@@ -498,7 +514,7 @@
     return '<div class="card" data-go="#/session/' + esc(s.id) + '" style="cursor:pointer"><div class="wrap" style="justify-content:space-between"><b>' + esc(s.course) + '</b>' +
            '<span class="chip ' + (num(s.absent) ? 'bad' : 'ok') + '">غياب ' + esc(s.absent) + ' / ' + esc(s.total) + '</span></div>' +
            '<div class="muted" style="font-size:14px;margin-top:4px"><span class="num">' + esc(s.date) + '</span> · ' + esc(s.type) + ' · ' + esc(s.hours) + ' ساعة · المرحلة ' + esc(s.stage) +
-           ' · شعبة ' + esc(s.section) + ' · ' + esc(s.study) + (showIns ? ' · ' + esc(s.ins) : '') + '</div></div>';
+           (s.study ? ' · ' + esc(s.study) : '') + (showIns ? ' · ' + esc(s.ins) : '') + '</div></div>';
   }
   function viewSessions() {
     store.set('lastAdminSess', 0);
@@ -519,7 +535,7 @@
       LIST = { roster: r, st: st, onChange: function () {} };
       for (var i = 1; i <= 6; i++) opts += '<option' + (num(s.hours) === i ? ' selected' : '') + '>' + i + '</option>';
       mount(title('تفاصيل المحاضرة', back) +
-        '<div class="card scan-head"><b>' + esc(s.course) + '</b><br>' + esc(S.deptName[s.dept_id] || '') + ' · المرحلة ' + esc(s.stage) + ' · شعبة ' + esc(s.section) + ' · ' + esc(s.study) +
+        '<div class="card scan-head"><b>' + esc(s.course) + '</b><br>' + esc(S.deptName[s.dept_id] || '') + ' · المرحلة ' + esc(s.stage) + (s.study ? ' · ' + esc(s.study) : '') +
         (s.ins ? '<br>التدريسي: ' + esc(s.ins) : '') + '</div>' +
         '<div class="card"><div class="row"><div><label class="f" for="sdDate">التاريخ</label><input class="inp" type="date" id="sdDate" value="' + esc(s.date) + '" max="' + today() + '"></div>' +
         '<div><label class="f" for="sdHours">الساعات</label><select class="inp" id="sdHours">' + opts + '</select></div>' +
@@ -533,20 +549,13 @@
   /* ---------------- تقرير المادة ---------------- */
   var REPORT = null;
   function viewReport(parts) {
-    // #/report/<t_id>[/<section>]   أو   #/creport/<c_id>/<section>/<study>  (للإدارة)
+    // #/report/<t_id>   أو   #/creport/<c_id>/<study>  (للإدارة، الدراسة فارغة = الكل)
     var q, back = '#/home', nav = 'home';
-    if (parts[0] === 'creport') { q = { c_id: parts[1], section: parts[2], study: parts[3] }; back = '#/admin/reports'; nav = 'admin'; }
+    if (parts[0] === 'creport') { q = { c_id: parts[1], study: parts[2] || '' }; back = '#/admin/reports'; nav = 'admin'; }
     else {
-      var t = teach(parts[1]), sec = parts[2] || (t && t.section);
+      var t = teach(parts[1]);
       if (!t) return go('#/home');
-      if (!sec) {
-        var secs = sectionsOf(t);
-        if (secs.length === 1) sec = secs[0];
-        else return mount(title('تقرير المادة', back) + '<div class="card"><h3>' + esc(t.name) + '</h3><label class="f">اختر الشعبة</label><div class="wrap">' +
-          (secs.length ? secs.map(function (s) { return '<button class="btn soft" data-go="#/report/' + esc(t.t_id) + '/' + encodeURIComponent(s) + '">شعبة ' + esc(s) + '</button>'; }).join('')
-                       : '<span class="muted">لا يوجد طلبة لهذه المادة</span>') + '</div></div>', nav);
-      }
-      q = { t_id: t.t_id, section: sec };
+      q = { t_id: t.t_id };
     }
     mount(title('تقرير المادة', back) + loading, nav, true);
     api('courseReport', q).then(function (d) {
@@ -558,7 +567,7 @@
       }).sort(function (a, b) { return b.pct - a.pct || b.abs - a.abs || byName(a, b); });
       REPORT = { d: d, rows: rows, den: den };
       var h = title('تقرير المادة', back) + '<div class="card scan-head"><b>' + esc(d.course.name) + '</b><br>' + esc(S.deptName[d.course.dept_id] || '') + ' · المرحلة ' + esc(d.course.stage) +
-        ' · شعبة ' + esc(d.section) + ' · ' + esc(d.study) + '<br>المحاضرات المسجلة: ' + d.sessions.length + ' (' + fmt(d.held) + ' ساعة)' +
+        (d.study ? ' · ' + esc(d.study) : '') + '<br>الطلبة الذين اختاروا المادة: ' + d.roster.length + ' · المحاضرات المسجلة: ' + d.sessions.length + ' (' + fmt(d.held) + ' ساعة)' +
         (den ? ' · ساعات المادة الكلية: ' + fmt(den) : '') + '</div>';
       if (!den) h += '<div class="note warn">لم تُحدَّد الساعات الكلية لهذه المادة، لذلك لا تُحسب النسب. يحددها الأدمن من «المواد».</div>';
       h += '<div class="stats"><div class="stat"><b>' + rows.length + '</b><span>عدد الطلبة</span></div>' + [1, 2, 3].map(function (l) {
@@ -600,9 +609,9 @@
   function viewAccount() {
     var u = S.boot.user;
     mount(title('حسابي') + '<div class="card"><h3>' + esc(u.name) + '</h3><div class="wrap" style="margin-top:6px"><span class="chip">' + esc(ROLE[u.role] || u.role) + '</span>' +
-      (S.deptName[u.dept_id] ? '<span class="chip teal">' + esc(S.deptName[u.dept_id]) + '</span>' : '') + '<span class="chip num">' + esc(u.username) + '</span></div></div>' +
+      '<span class="chip teal">' + esc(S.deptName[u.dept_id] || '') + '</span><span class="chip num">' + esc(u.username) + '</span></div></div>' +
       '<div class="card"><h3>تغيير كلمة المرور</h3><form id="pwForm"><label class="f" for="pw0">كلمة المرور الحالية</label><input class="inp" type="password" id="pw0" dir="ltr" autocomplete="current-password" required>' +
-      '<label class="f" for="pw1">كلمة المرور الجديدة (4 أحرف على الأقل)</label><input class="inp" type="password" id="pw1" dir="ltr" autocomplete="new-password" minlength="4" required>' +
+      '<label class="f" for="pw1">كلمة المرور الجديدة (6 أحرف على الأقل)</label><input class="inp" type="password" id="pw1" dir="ltr" autocomplete="new-password" minlength="6" required>' +
       '<label class="f" for="pw2">تأكيد كلمة المرور الجديدة</label><input class="inp" type="password" id="pw2" dir="ltr" autocomplete="new-password" required>' +
       '<button class="btn block" style="margin-top:14px">حفظ كلمة المرور</button></form></div>' +
       '<div class="card"><button class="btn soft block" data-act="refresh">تحديث البيانات من الخادم</button>' +
@@ -627,7 +636,6 @@
     closeModal();
     if (!S.token || !S.boot) return viewLogin();
     if (page === 'login') return go('#/home');
-    if (staffOnly() && (page === 'home' || page === 'sessions' || page === 'take')) return go('#/admin');
     if (page === 'home') return viewHome();
     if (page === 'take') return viewTake(r[1]);
     if (page === 'scan') return viewScan();
@@ -656,12 +664,11 @@
       confirmBox('تجاهل المحاضرة غير المرسلة وحذف ما مُسح فيها؟', 'نعم، احذفها', true).then(function (y) { if (y) { S.draft = null; store.del('draft'); render(); } });
     },
     startTake: function (el) {
-      var t = teach(el.dataset.t), sec = $('#tkSec').value, date = $('#tkDate').value;
-      if (!sec) return toast('اختر الشعبة أولاً', 'bad');
+      var t = teach(el.dataset.t), date = $('#tkDate').value;
       if (!date || date > today()) return toast('اختر تاريخاً صحيحاً', 'bad');
       var begin = function () {
         initAudio();
-        S.draft = { sid: 'S' + Date.now().toString(36) + Math.random().toString(36).substr(2, 6), t_id: t.t_id, section: sec, type: $('#tkType .on').dataset.v,
+        S.draft = { sid: 'S' + Date.now().toString(36) + Math.random().toString(36).substr(2, 6), t_id: t.t_id, type: $('#tkType .on').dataset.v,
                     date: date, hours: num($('#tkHours').value), present: {}, exc: {} };
         saveDraft(); go('#/scan');
       };
@@ -708,7 +715,7 @@
     xlsReport: function () {
       var R = REPORT, d = R.d, rows = [['#', 'رقم الطالب', 'اسم الطالب', 'غياب (ساعة)', 'مجاز (ساعة)', 'النسبة %', 'الحالة']];
       R.rows.forEach(function (r, i) { rows.push([i + 1, r.id, r.name, r.abs, r.exc, R.den ? Math.round(r.pct * 10) / 10 : '', R.den ? levelName(r.l) : '']); });
-      exportXlsx('غيابات ' + d.course.name + ' ' + d.section, [{ name: 'الغيابات', rows: rows }]);
+      exportXlsx('غيابات ' + d.course.name + (d.study ? ' ' + d.study : ''),[{ name: 'الغيابات', rows: rows }]);
     }
   };
   document.addEventListener('click', function (ev) {
@@ -720,13 +727,7 @@
     } else { ev.preventDefault(); go(el.dataset.go); }
   });
   window.addEventListener('hashchange', render);
-  // إيقاف الكاميرا أثناء تشغيلها يولّد تحذيراً غير مؤثر من المتصفح
-  window.addEventListener('unhandledrejection', function (e) {
-    var m = String((e.reason && e.reason.message) || e.reason || '');
-    if (/play\(\) request was interrupted|media was removed/.test(m)) e.preventDefault();
-  });
   window.addEventListener('online', function () { paintTop(); flushQueue(); });
-  setInterval(function () { if (S.queue.length && navigator.onLine && !document.hidden) flushQueue(); }, 60000);   // إعادة المحاولة كل دقيقة
   window.addEventListener('offline', paintTop);
   document.addEventListener('visibilitychange', function () {
     if (document.hidden) { if (scanner) stopCam(); }
@@ -734,7 +735,7 @@
   });
 
   // ما تحتاجه لوحة الإدارة من هذا الملف
-  window.App = { S: S, api: api, esc: esc, ltr: ltr, norm: norm, num: num, fmt: fmt, toast: toast, fail: fail, modal: modal, closeModal: closeModal, confirmBox: confirmBox,
+  window.App = { S: S, api: api, esc: esc, norm: norm, num: num, fmt: fmt, toast: toast, fail: fail, modal: modal, closeModal: closeModal, confirmBox: confirmBox,
                  mount: mount, title: title, loading: loading, loadScript: loadScript, loadCss: loadCss, exportXlsx: exportXlsx, store: store, go: go, render: render,
                  denom: denom, level: level, levelName: levelName, levelChip: levelChip, counted: counted, sessCard: sessCard, refreshBoot: refreshBoot, ROLE: ROLE };
 
@@ -750,14 +751,5 @@
 
   if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
     window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });
-    // عند وصول نسخة جديدة من النظام تُحدَّث الصفحة مرة واحدة تلقائياً (إلا أثناء المسح أو المراجعة)
-    if (navigator.serviceWorker.controller) {
-      var swReloaded = false;
-      navigator.serviceWorker.addEventListener('controllerchange', function () {
-        var pg = route()[0];
-        if (swReloaded || pg === 'scan' || pg === 'review') return;
-        swReloaded = true; location.reload();
-      });
-    }
   }
 })();

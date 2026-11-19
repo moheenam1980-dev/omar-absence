@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#1b1e6b">
 <meta name="robots" content="noindex">
-<title>نظام غيابات الطلبة</title>
+<title>نظام غيابات الطلبة - كلية علوم الحاسوب والرياضيات</title>
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="img/icon-192.png">
 <link rel="apple-touch-icon" href="img/icon-192.png">
@@ -15,24 +15,13 @@
 <body>
 <div id="app">
   <div class="boot-splash">
-    <div class="bs-college" id="bsCollege">نظام غيابات الطلبة</div>
-    <div class="bs-sys" id="bsSys"></div>
+    <img src="img/logo.jpg" alt="" width="120" height="120">
     <div class="spinner"></div>
   </div>
 </div>
 <div id="toast" role="status" aria-live="polite"></div>
 <div id="modal"></div>
 <noscript><p style="padding:24px;text-align:center">يجب تفعيل JavaScript لتشغيل النظام.</p></noscript>
-<script>
-  /* اسم الكلية من الإعدادات المحفوظة على الجهاز */
-  (function () {
-    var c = 'كلية علوم الحاسوب والرياضيات';
-    try { var b = JSON.parse(localStorage.getItem('abs2_brand') || 'null'); if (b && b.college_name) c = b.college_name; } catch (e) {}
-    document.getElementById('bsCollege').textContent = c;
-    document.getElementById('bsSys').textContent = 'نظام غيابات الطلبة';
-    document.title = 'نظام غيابات الطلبة - ' + c;
-  })();
-</script>
 <script src="js/config.js"></script>
 <script src="js/app.js" defer></script>
 </body>
