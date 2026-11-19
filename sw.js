@@ -1,6 +1,6 @@
 /* عامل الخدمة: يجعل النظام يفتح فوراً من ذاكرة الهاتف ثم يحدّث نفسه في الخلفية.
    عند تعديل أي ملف في المستودع غيّر رقم النسخة هنا ليصل التحديث للجميع. */
-var CACHE = 'absence-v3.0.1';
+var CACHE = 'absence-v3.0.2';
 var SHELL = ['./', 'index.html', 'css/app.css', 'js/config.js', 'js/app.js', 'js/admin.js', 'css/cards.css',
   'img/logo.jpg', 'img/icon-192.png', 'manifest.json', 'lib/html5-qrcode.min.js',
   'fonts/tajawal-arabic-400-normal.woff2', 'fonts/tajawal-arabic-500-normal.woff2', 'fonts/tajawal-arabic-700-normal.woff2',
@@ -17,13 +17,23 @@ self.addEventListener('activate', function (e) {
 self.addEventListener('fetch', function (e) {
   var req = e.request;
   if (req.method !== 'GET' || new URL(req.url).origin !== self.location.origin) return;   // طلبات الخادم لا تُخزَّن
+  var path = new URL(req.url).pathname;
+  var code = req.mode === 'navigate' || /\.(html|js|css|json)$/.test(path) || /\/$/.test(path);
   e.respondWith(caches.open(CACHE).then(function (cache) {
-    return cache.match(req, { ignoreSearch: true }).then(function (hit) {
-      var net = fetch(req).then(function (res) {
+    var net = function () {
+      return fetch(req, code ? { cache: 'no-cache' } : undefined).then(function (res) {
         if (res && res.ok) cache.put(req, res.clone());
         return res;
-      }).catch(function () { return hit; });
-      return hit || net;
+      });
+    };
+    if (code) {
+      // ملفات البرنامج: الأحدث من الإنترنت دائماً، والنسخة المحفوظة فقط عند انقطاع الاتصال
+      // (سابقاً كانت تُعرض النسخة القديمة أولاً فلا يظهر التحديث إلا بعد عدة مرات تحديث)
+      return net().catch(function () { return cache.match(req, { ignoreSearch: true }); });
+    }
+    // الخطوط والصور والمكتبات لا تتغير: من الذاكرة أولاً لسرعة الفتح
+    return cache.match(req, { ignoreSearch: true }).then(function (hit) {
+      return hit || net();
     });
   }));
 });
