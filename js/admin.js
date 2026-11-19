@@ -263,7 +263,7 @@
     var list = M.meta.instructors.slice().sort(function (a, b) { return a.ins_name.localeCompare(b.ins_name, 'ar'); });
     frame('<div class="toolbar"><button class="btn sm" data-act="aAdd" data-e="instructors">إضافة تدريسي</button><button class="btn sm ok" data-act="aImport" data-e="instructors">رفع إكسل</button><span class="sp"></span><span class="muted">العدد: ' + list.length + '</span></div>' +
       table(['الاسم', 'القسم', 'اسم المستخدم', 'كلمة المرور', 'الصلاحية', 'الحالة', 'آخر دخول', ''], list.map(function (i) {
-        return '<tr><td class="w">' + esc(i.ins_name) + '</td><td>' + esc(deptName(i.dept_id)) + '</td><td class="num">' + esc(i.username) + '</td><td class="num">' +
+        return '<tr><td class="w">' + esc(i.ins_name) + '</td><td>' + esc(i.dept_id ? deptName(i.dept_id) : 'كل الأقسام') + '</td><td class="num">' + esc(i.username) + '</td><td class="num">' +
                (i.password ? esc(i.password) : '<span class="chip bad">غير محددة</span>') + '</td><td>' + esc(A.ROLE[i.role] || i.role) + '</td><td>' + yn(i.active) +
                '</td><td class="num">' + esc(i.last_login || '-') + '</td>' + acts('instructors', i.ins_id) + '</tr>';
       })));
@@ -430,7 +430,7 @@
           options: D.courses.filter(function (c) { return c.active !== 'لا'; }).map(function (c) { return [c.c_id, c.c_name + ' - ' + c.c_stage]; }) },
         { k: 'ins_id', label: 'التدريسي', type: 'select', empty: 'اختر التدريسي', value: r.ins_id,
           options: M.meta.instructors.filter(function (i) { return i.active !== 'لا'; }).sort(function (a, b) { return a.ins_name.localeCompare(b.ins_name, 'ar'); })
-                    .map(function (i) { return [i.ins_id, i.ins_name + ' (' + deptName(i.dept_id) + ')']; }) },
+                    .map(function (i) { return [i.ins_id, i.ins_name + ' (' + (i.dept_id ? deptName(i.dept_id) : 'كل الأقسام') + ')']; }) },
         { k: 'study', label: 'الدراسة', type: 'select', options: [['', 'الكل']].concat(STUDIES), value: r.study || '', req: false,
           hint: 'اختر «الكل» إذا كان التدريسي يدرّس كل الطلبة الذين اختاروا المادة' }
       ], function (v) { v._id = id || ''; return saveRow('teaching', v, ['teaching']); });
@@ -438,7 +438,8 @@
       r = find(M.meta.instructors, 'ins_id');
       form(isNew ? 'إضافة تدريسي' : 'تعديل تدريسي', [
         { k: 'ins_name', label: 'الاسم', value: r.ins_name },
-        { k: 'dept_id', label: 'القسم', type: 'select', value: r.dept_id || '', empty: 'اختر القسم', options: M.meta.departments.map(function (d) { return [d.dept_id, d.dept_name]; }) },
+        { k: 'dept_id', label: 'القسم', type: 'select', value: r.dept_id || '', empty: 'اختر القسم', req: false,
+          hint: 'مطلوب للتدريسي ورئيس القسم. مدير النظام يمكن تركه بدون قسم (يدير كل الأقسام)', options: M.meta.departments.map(function (d) { return [d.dept_id, d.dept_name]; }) },
         { k: 'username', label: 'اسم المستخدم (أحرف إنجليزية وأرقام)', value: r.username, ltr: 1 },
         { k: 'password', label: 'كلمة المرور (6 أحرف على الأقل)', value: r.password, ltr: 1, req: isNew, hint: isNew ? '' : 'عدّلها لتغيير كلمة المرور، أو اتركها كما هي' },
         { k: 'role', label: 'الصلاحية', type: 'select', value: r.role || 'instructor', options: [['instructor', 'تدريسي'], ['head', 'رئيس / مقرر قسم'], ['admin', 'مدير النظام']] },

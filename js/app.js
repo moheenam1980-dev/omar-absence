@@ -609,7 +609,7 @@
   function viewAccount() {
     var u = S.boot.user;
     mount(title('حسابي') + '<div class="card"><h3>' + esc(u.name) + '</h3><div class="wrap" style="margin-top:6px"><span class="chip">' + esc(ROLE[u.role] || u.role) + '</span>' +
-      '<span class="chip teal">' + esc(S.deptName[u.dept_id] || '') + '</span><span class="chip num">' + esc(u.username) + '</span></div></div>' +
+      '<span class="chip teal">' + esc(u.dept_id ? (S.deptName[u.dept_id] || '') : 'كل الأقسام') + '</span><span class="chip num">' + esc(u.username) + '</span></div></div>' +
       '<div class="card"><h3>تغيير كلمة المرور</h3><form id="pwForm"><label class="f" for="pw0">كلمة المرور الحالية</label><input class="inp" type="password" id="pw0" dir="ltr" autocomplete="current-password" required>' +
       '<label class="f" for="pw1">كلمة المرور الجديدة (6 أحرف على الأقل)</label><input class="inp" type="password" id="pw1" dir="ltr" autocomplete="new-password" minlength="6" required>' +
       '<label class="f" for="pw2">تأكيد كلمة المرور الجديدة</label><input class="inp" type="password" id="pw2" dir="ltr" autocomplete="new-password" required>' +
