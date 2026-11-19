@@ -6,10 +6,13 @@
   var $ = function (s, r) { return (r || document).querySelector(s); };
   var isAdmin = function () { return S.boot.user.role === 'admin'; };
   var STUDIES = ['صباحي', 'مسائي'], SEMS = ['الأول', 'الثاني', 'سنوي'];
-  var M = { meta: null, dept: A.store.get('adminDept', ''), data: {}, tab: 'dash', f: { q: '', course: '', limit: 150 } };
+  // القسم لا يُختار تلقائياً: تبدأ القائمة بـ«اختر القسم» حتى يختار المدير بنفسه
+  var M = { meta: null, dept: '', data: {}, tab: 'dash', seq: 0, f: { q: '', course: '', limit: 150 } };
+  var STALE = { stale: true };
   var TABS = [['dash', 'المتابعة'], ['students', 'الطلبة'], ['courses', 'المواد'], ['enrollment', 'اختيار المواد'], ['teaching', 'الإسناد'], ['cards', 'الهويات'],
               ['reports', 'التقارير'], ['sessions', 'المحاضرات'], ['instructors', 'التدريسيون', 1], ['departments', 'الأقسام', 1], ['years', 'السنوات', 1], ['settings', 'الإعدادات', 1]];
-  var NO_DEPT = { dash: 1, departments: 1, years: 1, settings: 1 };
+  // تبويبات لا تحتاج اختيار قسم (التدريسيون يُعرضون لكل الأقسام)
+  var NO_DEPT = { dash: 1, instructors: 1, departments: 1, years: 1, settings: 1 };
 
   function stages() { return S.boot.settings.stages.split(/[,،]/).map(function (x) { return x.trim(); }).filter(String); }
   function deptName(id) { var d = (M.meta.departments || []).filter(function (x) { return x.dept_id === id; })[0]; return d ? d.dept_name : ''; }
@@ -26,13 +29,19 @@
     return api('list', { entities: ['departments', 'years', 'instructors'] }).then(function (d) {
       M.meta = d;
       if (!isAdmin()) M.dept = S.boot.user.dept_id;
-      else if (!M.dept || !deptName(M.dept)) M.dept = (d.departments[0] || {}).dept_id || '';
+      else if (M.dept && !deptName(M.dept)) M.dept = '';
     });
+  }
+  /** يتجاهل نتيجة طلب وصلت بعد أن انتقل المستخدم إلى تبويب أو قسم آخر
+      (سابقاً كانت تُرسم فوق التبويب الجديد، مثل ظهور إحصائيات «المتابعة» داخل «التدريسيون») */
+  function live(p) {
+    var s = M.seq;
+    return p.then(function (v) { if (s !== M.seq) throw STALE; return v; });
   }
   function need(ents) {
     var D = M.data[M.dept] || (M.data[M.dept] = {}), miss = ents.filter(function (e) { return !D[e]; });
     if (!miss.length) return Promise.resolve(D);
-    return api('list', { entities: miss, dept_id: M.dept }).then(function (d) { for (var k in d) D[k] = d[k]; return D; });
+    return live(api('list', { entities: miss, dept_id: M.dept }).then(function (d) { for (var k in d) D[k] = d[k]; return D; }));
   }
   function drop(ents) { var D = M.data[M.dept] || {}; ents.forEach(function (e) { delete D[e]; }); }
   function changed(ents, meta) {
@@ -46,7 +55,7 @@
     var h = A.title('لوحة الإدارة');
     if (!NO_DEPT[M.tab]) {
       h += isAdmin() ? '<div class="toolbar"><label class="muted" for="adDept">القسم:</label><select class="inp" id="adDept" style="max-width:340px">' +
-                       opt(M.meta.departments.map(function (d) { return [d.dept_id, d.dept_name]; }), M.dept) + '</select></div>'
+                       opt(M.meta.departments.map(function (d) { return [d.dept_id, d.dept_name]; }), M.dept, 'اختر القسم') + '</select></div>'
                      : '<div class="note">القسم: <b>' + esc(deptName(M.dept)) + '</b></div>';
     }
     h += '<div class="tabs">' + TABS.filter(function (t) { return !t[2] || isAdmin(); }).map(function (t) {
@@ -54,7 +63,7 @@
     }).join('') + '</div>';
     A.mount(h + body, 'admin', true);
     var sel = $('#adDept');
-    if (sel) sel.onchange = function () { M.dept = this.value; A.store.set('adminDept', M.dept); render([M.tab]); };
+    if (sel) sel.onchange = function () { M.dept = this.value; render([M.tab]); };
     var on = $('.tabs a.on');
     if (on && on.scrollIntoView) on.scrollIntoView({ inline: 'center', block: 'nearest' });
   }
@@ -62,10 +71,15 @@
     var tab = parts[0] || 'dash', def = TABS.filter(function (t) { return t[0] === tab; })[0];
     if (!def || (def[2] && !isAdmin())) tab = 'dash';
     M.tab = tab;
+    var seq = ++M.seq;
     loadMeta().then(function () {
+      if (seq !== M.seq) return;
+      if (!NO_DEPT[tab] && !M.dept) {
+        return frame('<div class="card empty"><b>اختر القسم أولاً</b>اختر القسم من القائمة أعلاه لعرض بياناته.</div>');
+      }
       frame(A.loading);
       return VIEW[tab]();
-    }).catch(function (e) { if (M.meta) frame('<div class="note bad">' + esc(e.message) + '</div>'); else A.mount('<div class="note bad">' + esc(e.message) + '</div>', 'admin'); });
+    }).catch(function (e) { if (e === STALE || seq !== M.seq) return; if (M.meta) frame('<div class="note bad">' + esc(e.message) + '</div>'); else A.mount('<div class="note bad">' + esc(e.message) + '</div>', 'admin'); });
   }
 
   /* ---------- نموذج إدخال عام ---------- */
@@ -106,7 +120,7 @@
   var VIEW = {};
 
   VIEW.dash = function () {
-    return api('stats').then(function (d) {
+    return live(api('stats')).then(function (d) {
       var t = { students: 0, courses: 0, instructors: 0, sessions: 0, today: 0, absences: 0 };
       d.depts.forEach(function (x) { for (var k in t) t[k] += x[k]; });
       frame('<div class="stats"><div class="stat"><b>' + t.students + '</b><span>الطلبة</span></div><div class="stat"><b>' + t.instructors + '</b><span>التدريسيون</span></div>' +
@@ -291,7 +305,7 @@
   /* ----- المحاضرات ----- */
   VIEW.sessions = function () {
     A.store.set('lastAdminSess', 1);
-    return api('sessions', { dept_id: M.dept, limit: 300 }).then(function (list) {
+    return live(api('sessions', { dept_id: M.dept, limit: 300 })).then(function (list) {
       frame(list.length ? '<div class="muted" style="margin-bottom:8px">آخر ' + list.length + ' محاضرة في القسم</div>' + list.map(function (s) { return A.sessCard(s, true); }).join('')
                         : '<div class="card empty"><b>لا توجد محاضرات مسجلة لهذا القسم</b></div>');
     });
@@ -508,11 +522,15 @@
     var spec = IMP[ent], extra = '';
     var REPLACE = { students: 'استبدال: حذف طلبة القسم غير الموجودين في الملف',
                     enrollment: 'استبدال: لكل طالب في الملف تُحذف اختياراته السابقة لمواد هذا القسم غير الموجودة في الملف' };
+    if (ent === 'instructors') {
+      extra = '<label class="f" for="imDept">القسم الذي يُضاف إليه التدريسيون</label><select class="inp" id="imDept" required>' +
+              opt(M.meta.departments.map(function (d) { return [d.dept_id, d.dept_name]; }), '', 'اختر القسم') + '</select>';
+    }
     if (REPLACE[ent]) {
       extra = '<label class="f" for="imMode">طريقة الرفع</label><select class="inp" id="imMode"><option value="merge">' +
               (ent === 'students' ? 'إضافة الجدد وتحديث الموجودين' : 'إضافة الاختيارات الجديدة فقط') + '</option><option value="replace">' + REPLACE[ent] + '</option></select>';
     }
-    A.modal('<h3>' + spec.title + ' - ' + esc(deptName(M.dept)) + '</h3><div class="muted" style="font-size:14px;margin-bottom:6px">الأعمدة في الصف الأول: ' +
+    A.modal('<h3>' + spec.title + (ent === 'instructors' ? '' : ' - ' + esc(deptName(M.dept))) + '</h3><div class="muted" style="font-size:14px;margin-bottom:6px">الأعمدة في الصف الأول: ' +
       spec.cols.map(function (c) { return '<span class="chip' + (spec.req.indexOf(c[0]) < 0 ? ' ghost' : '') + '">' + c[1] + (spec.req.indexOf(c[0]) < 0 ? ' (اختياري)' : '') + '</span>'; }).join(' ') + '</div>' +
       (ent === 'instructors' ? '<div class="note">إذا تُركت كلمة المرور فارغة يولّد النظام كلمة لكل تدريسي ويعرضها لك مرة واحدة.</div>' : '') +
       (ent === 'enrollment' ? '<div class="note">كل سطر = طالب واحد + مادة واحدة اختارها. الطالب الذي اختار 6 مواد يُكتب في 6 أسطر. ' +
@@ -533,10 +551,11 @@
     };
     $('#imFile').onchange = read;
     $('#imGo').onclick = function () {
-      var b = this, mode = $('#imMode') ? $('#imMode').value : 'merge';
+      var b = this, mode = $('#imMode') ? $('#imMode').value : 'merge', dept = $('#imDept') ? $('#imDept').value : M.dept;
+      if (!dept) return toast('اختر القسم', 'bad');
       var run = function () {
         b.disabled = true; b.textContent = 'جاري الرفع...';
-        api('importRows', { entity: ent, dept_id: M.dept, rows: rows, mode: mode }).then(function (r) { showImportResult(r, ent); })
+        api('importRows', { entity: ent, dept_id: dept, rows: rows, mode: mode }).then(function (r) { showImportResult(r, ent); })
           .catch(function (e) { b.disabled = false; b.textContent = 'رفع'; fail(e); });
       };
       if (mode === 'replace') { if (window.confirm(REPLACE[ent] + '. متابعة؟')) run(); } else run();
