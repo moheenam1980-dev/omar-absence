@@ -424,7 +424,7 @@
       r = find(M.meta.instructors, 'ins_id');
       form(isNew ? 'إضافة تدريسي' : 'تعديل تدريسي', [
         { k: 'ins_name', label: 'الاسم', value: r.ins_name },
-        { k: 'dept_id', label: 'القسم', type: 'select', value: r.dept_id || M.dept, options: M.meta.departments.map(function (d) { return [d.dept_id, d.dept_name]; }) },
+        { k: 'dept_id', label: 'القسم', type: 'select', value: r.dept_id || '', empty: 'اختر القسم', options: M.meta.departments.map(function (d) { return [d.dept_id, d.dept_name]; }) },
         { k: 'username', label: 'اسم المستخدم (أحرف إنجليزية وأرقام)', value: r.username, ltr: 1 },
         { k: 'password', label: 'كلمة المرور (6 أحرف على الأقل)', value: r.password, ltr: 1, req: isNew, hint: isNew ? '' : 'عدّلها لتغيير كلمة المرور، أو اتركها كما هي' },
         { k: 'role', label: 'الصلاحية', type: 'select', value: r.role || 'instructor', options: [['instructor', 'تدريسي'], ['head', 'رئيس / مقرر قسم'], ['admin', 'مدير النظام']] },
