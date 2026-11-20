@@ -24,6 +24,12 @@
   function norm(s) { return String(s === undefined || s === null ? '' : s).trim().toLowerCase(); }
   function num(v) { var n = Number(v); return isFinite(n) ? n : 0; }
   function today() { var d = new Date(); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
+  /** حقل تاريخ يُعرض دائماً بصيغة سنة-شهر-يوم مهما كانت لغة الجهاز.
+      النص الظاهر للعرض فقط، وفوقه حقل تاريخ شفاف يفتح منتقي التاريخ في الجهاز عند الضغط */
+  function dateField(id, val) {
+    return '<div class="datef"><input class="inp num" id="' + id + 'Txt" dir="ltr" readonly tabindex="-1" aria-hidden="true" value="' + esc(val) + '">' +
+           '<input type="date" class="date-native" id="' + id + '" value="' + esc(val) + '" max="' + today() + '" aria-label="التاريخ (سنة-شهر-يوم)"></div>';
+  }
   function fmt(n) { return (Math.round(n * 10) / 10).toString(); }
   function byName(a, b) { return a.name.localeCompare(b.name, 'ar', { numeric: true }); }
   function go(hash) { if (location.hash === hash) render(); else location.hash = hash; }
@@ -234,7 +240,7 @@
             ' · الفصل ' + esc(cur) + '</div></div>';
     if (S.draft && teach(S.draft.t_id)) {
       var dt = teach(S.draft.t_id);
-      h += '<div class="note warn"><b>لديك محاضرة لم تُرسل بعد:</b> ' + esc(dt.name) + ' (' + esc(S.draft.date) + ')' +
+      h += '<div class="note warn"><b>لديك محاضرة لم تُرسل بعد:</b> ' + esc(dt.name) + ' (<span class="num">' + esc(S.draft.date) + '</span>)' +
            '<div class="row" style="margin-top:8px"><button class="btn sm ok" data-go="#/scan">متابعة</button><button class="btn sm ghost" data-act="dropDraft">تجاهلها</button></div></div>';
     }
     h += queueBox();
@@ -273,8 +279,8 @@
       return mount(h, 'home');
     }
     h += '<label class="f">نوع المحاضرة</label><div class="seg" id="tkType"><button type="button" class="on" data-v="نظري">نظري</button><button type="button" data-v="عملي">عملي</button></div>' +
-         '<div class="row"><div><label class="f" for="tkDate">التاريخ</label><input class="inp" type="date" id="tkDate" value="' + today() + '" max="' + today() + '"></div>' +
-         '<div><label class="f" for="tkHours">عدد الساعات</label><select class="inp" id="tkHours">' + opts + '</select></div></div>' +
+         '<div class="row"><div class="col-date"><label class="f" for="tkDate">التاريخ</label>' + dateField('tkDate', today()) + '</div>' +
+         '<div class="col-small"><label class="f" for="tkHours">عدد الساعات</label><select class="inp" id="tkHours">' + opts + '</select></div></div>' +
          '<div class="muted" style="margin-top:10px;font-size:14px">عدد الطلبة المسجلين في المادة: ' + n +
          '<br>الطالب الذي لم يختر هذه المادة لا يظهر في القائمة ولا يُسجَّل عليه غياب.</div></div>' +
          '<button class="btn ok block" data-act="startTake" data-t="' + esc(tid) + '">بدء المسح بالكاميرا</button>';
@@ -537,9 +543,9 @@
       mount(title('تفاصيل المحاضرة', back) +
         '<div class="card scan-head"><b>' + esc(s.course) + '</b><br>' + esc(S.deptName[s.dept_id] || '') + ' · المرحلة ' + esc(s.stage) + (s.study ? ' · ' + esc(s.study) : '') +
         (s.ins ? '<br>التدريسي: ' + esc(s.ins) : '') + '</div>' +
-        '<div class="card"><div class="row"><div><label class="f" for="sdDate">التاريخ</label><input class="inp" type="date" id="sdDate" value="' + esc(s.date) + '" max="' + today() + '"></div>' +
-        '<div><label class="f" for="sdHours">الساعات</label><select class="inp" id="sdHours">' + opts + '</select></div>' +
-        '<div><label class="f" for="sdType">النوع</label><select class="inp" id="sdType"><option' + (s.type === 'نظري' ? ' selected' : '') + '>نظري</option><option' + (s.type === 'عملي' ? ' selected' : '') + '>عملي</option></select></div></div></div>' +
+        '<div class="card"><div class="row"><div class="col-date"><label class="f" for="sdDate">التاريخ</label>' + dateField('sdDate', s.date) + '</div>' +
+        '<div class="col-small"><label class="f" for="sdHours">الساعات</label><select class="inp" id="sdHours">' + opts + '</select></div>' +
+        '<div class="col-mid"><label class="f" for="sdType">النوع</label><select class="inp" id="sdType"><option' + (s.type === 'نظري' ? ' selected' : '') + '>نظري</option><option' + (s.type === 'عملي' ? ' selected' : '') + '>عملي</option></select></div></div></div>' +
         '<div class="card">' + countsHtml() + listHelp + plist() + '</div>' +
         '<div class="sticky-actions"><button class="btn bad" data-act="delSession" data-id="' + esc(id) + '" style="flex:.5">حذف</button>' +
         '<button class="btn ok" data-act="saveSession" data-id="' + esc(id) + '">حفظ التعديلات</button></div>', 'sessions');
@@ -725,6 +731,15 @@
       var fn = ACT[el.dataset.act] || (window.AdminUI && window.AdminUI.act[el.dataset.act]);
       if (fn) { ev.preventDefault(); fn(el, ev); }
     } else { ev.preventDefault(); go(el.dataset.go); }
+  });
+  // حقول التاريخ: الضغط يفتح منتقي التاريخ، والاختيار يُحدّث النص الظاهر (سنة-شهر-يوم)
+  document.addEventListener('click', function (ev) {
+    var d = ev.target.closest && ev.target.closest('.date-native');
+    if (d && d.showPicker) { try { d.showPicker(); } catch (e) {} }
+  });
+  document.addEventListener('input', function (ev) {
+    var d = ev.target;
+    if (d.classList && d.classList.contains('date-native')) { var t = document.getElementById(d.id + 'Txt'); if (t) t.value = d.value; }
   });
   window.addEventListener('hashchange', render);
   window.addEventListener('online', function () { paintTop(); flushQueue(); });
