@@ -92,12 +92,15 @@
     for (var k in (data || {})) body[k] = data[k];
     // نص عادي بدون ترويسات خاصة حتى لا يُرسل المتصفح طلب تمهيدي (أسرع ويتوافق مع Apps Script)
     return fetch(API, { method: 'POST', body: JSON.stringify(body) }).then(function (r) {
-      return r.json().catch(function () { throw new Error('رد غير مفهوم من الخادم. تأكد من نشر السكربت بصلاحية «أي شخص»'); });
+      // رد غير JSON يحدث أيضاً عندما يكون خادم Google مزدحماً: يُعامل كـ«مشغول» فتُعاد المحاولة تلقائياً
+      return r.json().catch(function () { var e = new Error('رد غير مفهوم من الخادم. تأكد من نشر السكربت بصلاحية «أي شخص»'); e.busy = true; throw e; });
     }, function () {
       var e = new Error('تعذر الاتصال بالخادم. تحقق من الإنترنت'); e.net = true; throw e;
     }).then(function (j) {
       if (!j.ok) {
         var e = new Error(j.error || 'حدث خطأ'); e.code = j.code;
+        // الخادم مشغول بحفظ محاضرات أخرى (أو ازدحام Google): مؤقت، تُعاد المحاولة تلقائياً
+        e.busy = j.code === 'BUSY' || /lock timeout|too many times|timed out|try again later/i.test(j.error || '');
         if (j.code === 'AUTH') logout(true);
         throw e;
       }
@@ -522,15 +525,21 @@
       toast(r.already ? 'هذه المحاضرة مُرسلة مسبقاً' : 'تم الحفظ: ' + r.absent + ' غائب من ' + r.total, 'ok', 3500);
       done();
     }).catch(function (e) {
-      if (e.net) {
+      if (e.net || e.busy) {
         S.queue.push({ payload: payload, label: label });
         store.set('queue', S.queue);
-        toast('لا يوجد اتصال. حُفظت المحاضرة في الجهاز وستُرسل تلقائياً عند عودة الإنترنت', 'info', 5000);
-        done(); paintTop();
+        toast(e.net ? 'لا يوجد اتصال. حُفظت المحاضرة في الجهاز وستُرسل تلقائياً عند عودة الإنترنت'
+                    : 'الخادم مشغول الآن. حُفظت المحاضرة في الجهاز وستُرسل تلقائياً خلال لحظات', 'info', 5000);
+        done(); paintTop(); scheduleFlush(15000);
       } else { if (b) { b.disabled = false; b.textContent = 'تأكيد وإرسال'; } fail(e); }
     });
   }
-  var flushing = false;
+  var flushing = false, flushTimer = null;
+  /** إعادة محاولة إرسال المحاضرات المحفوظة في الجهاز تلقائياً بعد مدة (مع فرق عشوائي حتى لا يرسل الجميع في اللحظة نفسها) */
+  function scheduleFlush(ms) {
+    clearTimeout(flushTimer);
+    flushTimer = setTimeout(function () { if (navigator.onLine && S.queue.length) flushQueue(); }, (ms || 20000) + Math.random() * 10000);
+  }
   function flushQueue(only) {
     if (flushing || !S.queue.length || !S.token) return Promise.resolve();
     flushing = true;
@@ -545,7 +554,7 @@
         else { S.queue.splice(S.queue.indexOf(q), 1); toast('أُرسلت المحاضرة المحفوظة: ' + q.label, 'ok'); }
         return next();
       }, function (e) {
-        if (e.net) return;          // ما زال الاتصال مقطوعاً، نحاول لاحقاً
+        if (e.net || e.busy) { scheduleFlush(); return; }   // انقطاع أو انشغال مؤقت: نحاول لاحقاً تلقائياً
         q.err = e.message; return next();
       });
     };
@@ -822,6 +831,7 @@
   });
   window.addEventListener('hashchange', render);
   window.addEventListener('online', function () { paintTop(); flushQueue(); });
+  setInterval(function () { if (S.token && navigator.onLine && S.queue.length && !flushing) flushQueue(); }, 45000);
   window.addEventListener('offline', paintTop);
   document.addEventListener('visibilitychange', function () {
     if (document.hidden) { if (scanner) stopCam(); }
