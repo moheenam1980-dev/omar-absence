@@ -69,6 +69,16 @@ main#view.wide { max-width: 1180px; }
 .page-title .back { border: 1px solid var(--line); background: #fff; border-radius: 10px; width: 40px; height: 40px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
 .row { display: flex; gap: 10px; }
 .row > * { flex: 1; min-width: 0; }
+/* صف التاريخ: التاريخ أعرض، والساعات والنوع أصغر */
+.row > .col-date { flex: 1.5; }
+.row > .col-small { flex: .7; }
+.row > .col-mid { flex: 1; }
+.col-small select.inp, .col-mid select.inp { padding-left: 6px; padding-right: 8px; }
+/* حقل التاريخ بصيغة سنة-شهر-يوم */
+.datef { position: relative; }
+.datef .inp { text-align: center; cursor: pointer; letter-spacing: .5px; }
+.datef .date-native { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; border: 0; padding: 0; margin: 0; }
+.datef:focus-within .inp { border-color: var(--teal); background: #fff; box-shadow: 0 0 0 4px rgba(11, 142, 158, .14); }
 .wrap { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .btn { border: 0; border-radius: 12px; padding: 0 16px; min-height: 48px; font-weight: 700; font-size: 16px; color: #fff; background: linear-gradient(135deg, #22267e, #4433b5 70%, #0b8e9e 140%); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; text-decoration: none; transition: transform .1s, opacity .2s; }
 .btn:active { transform: scale(.97); }
