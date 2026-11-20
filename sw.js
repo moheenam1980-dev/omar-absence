@@ -1,9 +1,11 @@
 /* عامل الخدمة: يجعل النظام يفتح فوراً من ذاكرة الهاتف ثم يحدّث نفسه في الخلفية.
    عند تعديل أي ملف في المستودع غيّر رقم النسخة هنا ليصل التحديث للجميع. */
-var CACHE = 'absence-v3.0.3';
+var CACHE = 'absence-v4.0.0';
 var SHELL = ['./', 'index.html', 'css/app.css', 'js/config.js', 'js/app.js', 'js/admin.js', 'css/cards.css',
   'img/logo.jpg', 'img/icon-192.png', 'manifest.json', 'lib/html5-qrcode.min.js',
   'fonts/tajawal-arabic-400-normal.woff2', 'fonts/tajawal-arabic-500-normal.woff2', 'fonts/tajawal-arabic-700-normal.woff2',
+  'fonts/plex-arabic-400.woff2', 'fonts/plex-arabic-500.woff2', 'fonts/plex-arabic-600.woff2', 'fonts/plex-arabic-700.woff2',
+  'fonts/plex-latin-400.woff2', 'fonts/plex-latin-500.woff2', 'fonts/plex-latin-600.woff2', 'fonts/plex-latin-700.woff2',
   'fonts/tajawal-latin-400-normal.woff2', 'fonts/tajawal-latin-500-normal.woff2', 'fonts/tajawal-latin-700-normal.woff2'];
 
 self.addEventListener('install', function (e) {

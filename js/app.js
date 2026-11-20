@@ -171,12 +171,21 @@
   }
 
   /* ---------------- الهيكل العام ---------------- */
+  // أيقونات خطية موحّدة (نمط Lucide، سُمك 1.8) - تصميم فقط
+  var SV = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">';
   var ICON = {
-    home: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg>',
-    list: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>',
-    admin: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>',
-    user: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>',
-    back: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>'
+    home: SV + '<path d="M3 10.2 12 3l9 7.2V20a1 1 0 0 1-1 1h-5v-6.5H9V21H4a1 1 0 0 1-1-1z"/></svg>',
+    list: SV + '<rect x="5" y="3.5" width="14" height="18" rx="2.5"/><path d="M9 3.5V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v.5"/><path d="M9 10h6M9 14h6M9 18h3"/></svg>',
+    admin: SV + '<rect x="3" y="3" width="7.5" height="9" rx="2"/><rect x="13.5" y="3" width="7.5" height="5" rx="2"/><rect x="13.5" y="11" width="7.5" height="10" rx="2"/><rect x="3" y="15" width="7.5" height="6" rx="2"/></svg>',
+    user: SV + '<circle cx="12" cy="12" r="9.2"/><circle cx="12" cy="10" r="3.2"/><path d="M6.2 18.6c1.3-2 3.4-3.1 5.8-3.1s4.5 1.1 5.8 3.1"/></svg>',
+    back: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>',
+    scan: SV + '<path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 12h10"/></svg>',
+    chart: SV + '<path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M8 17v-5M13 17V8M18 17v-3"/></svg>',
+    camera: SV + '<path d="M14.5 4h-5L7.5 6.5H5a2 2 0 0 0-2 2V18a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8.5a2 2 0 0 0-2-2h-2.5z"/><circle cx="12" cy="13" r="3.5"/></svg>',
+    excel: SV + '<path d="M14 3H6.5A2.5 2.5 0 0 0 4 5.5v13A2.5 2.5 0 0 0 6.5 21h11a2.5 2.5 0 0 0 2.5-2.5V9z"/><path d="M14 3v6h6"/><path d="m9 13 4 5M13 13l-4 5"/></svg>',
+    print: SV + '<path d="M6 9V3h12v6"/><rect x="3" y="9" width="18" height="8" rx="2"/><path d="M6 14h12v7H6z"/></svg>',
+    refresh: SV + '<path d="M3 12a9 9 0 0 1 15.5-6.2L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15.5 6.2L3 16"/><path d="M8 16H3v5"/></svg>',
+    logout: SV + '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/></svg>'
   };
   function route() { return location.hash.replace(/^#\/?/, '').split('/').map(decodeURIComponent); }
   function isManager() { return S.boot && (S.boot.user.role === 'admin' || S.boot.user.role === 'head'); }
@@ -260,8 +269,8 @@
     list.forEach(function (t) {
       h += '<div class="card course"><h3>' + esc(t.name) + '</h3><div class="meta wrap"><span class="chip">' + esc(S.deptName[t.dept_id] || '') + '</span>' +
            '<span class="chip teal">المرحلة ' + esc(t.stage) + '</span><span class="chip teal">' + roster(t).length + ' طالب مسجل</span>' +
-           (t.study ? '<span class="chip gold">' + esc(t.study) + '</span>' : '') + '</div><div class="row"><button class="btn ok" data-go="#/take/' + esc(t.t_id) + '">تسجيل الغياب</button>' +
-           '<button class="btn ghost" data-go="#/report/' + esc(t.t_id) + '" style="flex:.6">التقرير</button></div></div>';
+           (t.study ? '<span class="chip gold">' + esc(t.study) + '</span>' : '') + '</div><div class="row"><button class="btn ok" data-go="#/take/' + esc(t.t_id) + '">' + ICON.scan + 'تسجيل الغياب</button>' +
+           '<button class="btn ghost" data-go="#/report/' + esc(t.t_id) + '" style="flex:.6">' + ICON.chart + 'التقرير</button></div></div>';
     });
     if (hidden || S.showAll) h += '<button class="btn soft block" data-act="toggleAll">' + (S.showAll ? 'إظهار مواد الفصل الحالي فقط' : 'إظهار مواد الفصل الآخر (' + hidden + ')') + '</button>';
     mount(h, 'home');
@@ -293,7 +302,7 @@
          '<div class="col-small"><label class="f" for="tkHours">عدد الساعات</label><select class="inp" id="tkHours">' + opts + '</select></div></div>' +
          '<div class="muted" style="margin-top:10px;font-size:14px">عدد الطلبة المسجلين في المادة: ' + n +
          '<br>الطالب الذي لم يختر هذه المادة لا يظهر في القائمة ولا يُسجَّل عليه غياب.</div></div>' +
-         '<button class="btn ok block" data-act="startTake" data-t="' + esc(tid) + '">بدء المسح بالكاميرا</button>';
+         '<button class="btn ok block" data-act="startTake" data-t="' + esc(tid) + '">' + ICON.camera + 'بدء المسح بالكاميرا</button>';
     mount(h, 'home');
     $('#tkType').onclick = function (e) {
       var bt = e.target.closest('button'); if (!bt) return;
@@ -591,7 +600,7 @@
                 '% أو تجاوز مجموع الغياب والمجاز ' + esc(S.boot.settings.warn3_pct) + '%.</div>';
       h += '<div class="stats"><div class="stat"><b>' + rows.length + '</b><span>عدد الطلبة</span></div>' + [1, 2, 3].map(function (l) {
         return '<div class="stat"><b style="color:' + ['', '#b98500', 'var(--warn)', 'var(--bad)'][l] + '">' + cnt[l] + '</b><span>' + esc(levelName(l)) + '</span></div>'; }).join('') + '</div>' +
-        '<div class="toolbar no-print"><button class="btn sm soft" data-act="xlsReport">تصدير إكسل</button><button class="btn sm ghost" data-act="print">طباعة</button></div>' +
+        '<div class="toolbar no-print"><button class="btn sm soft" data-act="xlsReport">' + ICON.excel + 'تصدير إكسل</button><button class="btn sm ghost" data-act="print">' + ICON.print + 'طباعة</button></div>' +
         '<div class="tbl-wrap"><table class="tbl"><thead><tr><th class="c">#</th><th>اسم الطالب</th><th class="c">غياب (ساعة)</th><th class="c">مجاز (ساعة)</th><th class="c">بدون عذر %</th><th class="c">مع المجاز %</th><th class="c">الحالة</th></tr></thead><tbody>' +
         rows.map(function (r, i) {
           return '<tr class="l' + r.l + '"><td class="c">' + (i + 1) + '</td><td class="w">' + esc(r.name) + '</td><td class="c num">' + fmt(r.abs) + '</td><td class="c num">' + fmt(r.exc) +
@@ -633,9 +642,9 @@
       '<label class="f" for="pw1">كلمة المرور الجديدة (6 أحرف على الأقل)</label><input class="inp" type="password" id="pw1" dir="ltr" autocomplete="new-password" minlength="6" required>' +
       '<label class="f" for="pw2">تأكيد كلمة المرور الجديدة</label><input class="inp" type="password" id="pw2" dir="ltr" autocomplete="new-password" required>' +
       '<button class="btn block" style="margin-top:14px">حفظ كلمة المرور</button></form></div>' +
-      '<div class="card"><button class="btn soft block" data-act="refresh">تحديث البيانات من الخادم</button>' +
+      '<div class="card"><button class="btn soft block" data-act="refresh">' + ICON.refresh + 'تحديث البيانات من الخادم</button>' +
       '<div class="muted" style="font-size:13.5px;margin:8px 0 12px">استخدمه إذا أُضيف طلبة أو مواد جديدة ولم تظهر عندك.</div>' +
-      '<button class="btn ghost block" data-act="logout">تسجيل الخروج</button></div>' +
+      '<button class="btn ghost block" data-act="logout">' + ICON.logout + 'تسجيل الخروج</button></div>' +
       '<div class="credit" style="text-align:center">designed by OMAR INAAM · v' + esc(S.boot.version) + '</div>', 'account');
     $('#pwForm').onsubmit = function (ev) {
       ev.preventDefault();
