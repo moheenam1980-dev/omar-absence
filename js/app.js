@@ -207,6 +207,9 @@
   };
   function route() { return location.hash.replace(/^#\/?/, '').split('/').map(decodeURIComponent); }
   function isManager() { return S.boot && (S.boot.user.role === 'admin' || S.boot.user.role === 'head'); }
+  /** مدير النظام موظف إدارة فقط: لا مواد ولا محاضرات ولا سجل، فقط «الإدارة» و«حسابي» */
+  function isAdmin() { return !!(S.boot && S.boot.user.role === 'admin'); }
+  var TEACH_PAGES = { home: 1, take: 1, scan: 1, review: 1, sessions: 1, report: 1 };
 
   function ensureShell() {
     if ($('#view')) return;
@@ -223,7 +226,7 @@
     n.textContent = off ? 'غير متصل' : (S.queue.length ? 'بانتظار الإرسال: ' + S.queue.length : '');
   }
   function paintNav(cur) {
-    var items = [['home', 'الرئيسية', ICON.home], ['sessions', 'السجل', ICON.list]];
+    var items = isAdmin() ? [] : [['home', 'الرئيسية', ICON.home], ['sessions', 'السجل', ICON.list]];
     if (isManager()) items.push(['admin', 'الإدارة', ICON.admin]);
     items.push(['account', 'حسابي', ICON.user]);
     $('#nav').innerHTML = items.map(function (i) {
@@ -251,7 +254,7 @@
       '<form id="loginForm" autocomplete="on"><label class="f" for="lu">اسم المستخدم</label>' +
       '<input class="inp" id="lu" dir="ltr" autocomplete="username" autocapitalize="none" spellcheck="false" required>' +
       '<label class="f" for="lp">كلمة المرور</label><input class="inp" id="lp" type="password" dir="ltr" autocomplete="current-password" required>' +
-      '<button class="btn block" id="lb" style="margin-top:16px">دخول</button></form><div class="credit">designed by OMAR INAAM</div></div></div>';
+      '<button class="btn block" id="lb" style="margin-top:16px">دخول</button></form><div class="credit">Designed by OMAR INAAM</div></div></div>';
     $('#loginForm').onsubmit = function (ev) {
       ev.preventDefault();
       var b = $('#lb');
@@ -570,7 +573,7 @@
     }).catch(function (e) { mount(title('سجل محاضراتي') + '<div class="note bad">' + esc(e.message) + '</div>', 'sessions'); });
   }
   function viewSession(id) {
-    var back = isManager() && store.get('lastAdminSess', 0) ? '#/admin/sessions' : '#/sessions';
+    var back = isAdmin() || (isManager() && store.get('lastAdminSess', 0)) ? '#/admin/sessions' : '#/sessions';
     mount(title('تفاصيل المحاضرة', back) + loading, 'sessions');
     api('sessionDetail', { session_id: id }).then(function (d) {
       if (route()[1] !== id) return;
@@ -680,16 +683,15 @@
   /* ---------------- حسابي ---------------- */
   function viewAccount() {
     var u = S.boot.user;
-    mount(title('حسابي') + '<div class="card"><h3>' + esc(u.name) + '</h3><div class="wrap" style="margin-top:6px"><span class="chip">' + esc(ROLE[u.role] || u.role) + '</span>' +
-      '<span class="chip teal">' + esc(u.dept_id ? (S.deptName[u.dept_id] || '') : 'كل الأقسام') + '</span><span class="chip num">' + esc(u.username) + '</span></div></div>' +
+    // زر الخروج في أعلى الصفحة ظاهر مباشرة دون الحاجة للنزول
+    mount(title('حسابي') + '<div class="card acct"><div class="acct-head"><div class="grow"><h3>' + esc(u.name) + '</h3><div class="wrap" style="margin-top:6px"><span class="chip">' + esc(ROLE[u.role] || u.role) + '</span>' +
+      '<span class="chip teal">' + esc(u.dept_id ? (S.deptName[u.dept_id] || '') : 'كل الأقسام') + '</span><span class="chip num">' + esc(u.username) + '</span></div></div></div>' +
+      '<button class="btn logout block" data-act="logout">' + ICON.logout + 'تسجيل الخروج</button></div>' +
       '<div class="card"><h3>تغيير كلمة المرور</h3><form id="pwForm"><label class="f" for="pw0">كلمة المرور الحالية</label><input class="inp" type="password" id="pw0" dir="ltr" autocomplete="current-password" required>' +
       '<label class="f" for="pw1">كلمة المرور الجديدة (6 أحرف على الأقل)</label><input class="inp" type="password" id="pw1" dir="ltr" autocomplete="new-password" minlength="6" required>' +
       '<label class="f" for="pw2">تأكيد كلمة المرور الجديدة</label><input class="inp" type="password" id="pw2" dir="ltr" autocomplete="new-password" required>' +
       '<button class="btn block" style="margin-top:14px">حفظ كلمة المرور</button></form></div>' +
-      '<div class="card"><button class="btn soft block" data-act="refresh">' + ICON.refresh + 'تحديث البيانات من الخادم</button>' +
-      '<div class="muted" style="font-size:13.5px;margin:8px 0 12px">استخدمه إذا أُضيف طلبة أو مواد جديدة ولم تظهر عندك.</div>' +
-      '<button class="btn ghost block" data-act="logout">' + ICON.logout + 'تسجيل الخروج</button></div>' +
-      '<div class="credit" style="text-align:center">designed by OMAR INAAM · v' + esc(S.boot.version) + '</div>', 'account');
+      '<div class="credit" style="text-align:center">Designed by OMAR INAAM<span class="ver">v' + esc(S.boot.version) + '</span></div>', 'account');
     $('#pwForm').onsubmit = function (ev) {
       ev.preventDefault();
       if ($('#pw1').value !== $('#pw2').value) return toast('كلمتا المرور غير متطابقتين', 'bad');
@@ -707,7 +709,8 @@
     document.body.classList.toggle('focus', page === 'scan' || page === 'review');
     closeModal();
     if (!S.token || !S.boot) return viewLogin();
-    if (page === 'login') return go('#/home');
+    if (page === 'login') return go(isAdmin() ? '#/admin' : '#/home');
+    if (isAdmin() && TEACH_PAGES[page]) return go('#/admin');   // صفحات التدريسي لا تخص مدير النظام
     if (page === 'home') return viewHome();
     if (page === 'take') return viewTake(r[1]);
     if (page === 'scan') return viewScan();

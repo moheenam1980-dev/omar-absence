@@ -451,7 +451,7 @@
         { k: 'c_id', label: 'المادة', type: 'select', empty: 'اختر المادة', value: r.c_id,
           options: D.courses.filter(function (c) { return c.active !== 'لا'; }).map(function (c) { return [c.c_id, c.c_name + ' - ' + c.c_stage]; }) },
         { k: 'ins_id', label: 'التدريسي', type: 'select', empty: 'اختر التدريسي', value: r.ins_id,
-          options: M.meta.instructors.filter(function (i) { return i.active !== 'لا'; }).sort(function (a, b) { return a.ins_name.localeCompare(b.ins_name, 'ar'); })
+          options: M.meta.instructors.filter(function (i) { return i.active !== 'لا' && i.role !== 'admin'; })   // مدير النظام لا تُسند إليه مواد.sort(function (a, b) { return a.ins_name.localeCompare(b.ins_name, 'ar'); })
                     .map(function (i) { return [i.ins_id, i.ins_name + ' (' + (i.dept_id ? deptName(i.dept_id) : 'كل الأقسام') + ')']; }) },
         { k: 'study', label: 'الدراسة', type: 'select', options: [['', 'الكل']].concat(STUDIES), value: r.study || '', req: false,
           hint: 'اختر «الكل» إذا كان التدريسي يدرّس كل الطلبة الذين اختاروا المادة' }

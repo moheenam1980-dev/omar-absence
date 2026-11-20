@@ -98,7 +98,8 @@ svg { flex-shrink: 0; }
 .login-card .sub { color: var(--muted); font-size: 14.5px; margin: 4px 0 22px; }
 .login-card form { text-align: right; }
 .login-card label.f { color: var(--ink-2); font-weight: 500; }
-.credit { margin-top: 20px; font-size: 11px; letter-spacing: 2.5px; color: var(--muted); direction: ltr; opacity: .8; }
+.credit { margin-top: 22px; font-family: 'Times New Roman', Times, serif; font-size: 15px; font-weight: 700; letter-spacing: .6px; color: var(--navy-dark); direction: ltr; }
+.credit .ver { display: block; margin-top: 2px; font-family: 'Tajawal', sans-serif; font-size: 11.5px; font-weight: 400; letter-spacing: 0; color: var(--muted); }
 
 /* ---------- الهيكل ---------- */
 .topbar { position: sticky; top: 0; z-index: 30; height: var(--top-h); background: var(--glass); color: var(--ink);
@@ -179,6 +180,10 @@ main#view.wide { max-width: 1200px; }
 .btn.ghost:hover { background: var(--hover); }
 .btn.soft { background: var(--soft); color: var(--soft-ink); box-shadow: none; }
 .btn.soft:hover { background: color-mix(in srgb, var(--soft) 70%, var(--primary) 12%); }
+.btn.logout { margin-top: 16px; background: var(--bad-soft); color: var(--bad-ink); border-color: color-mix(in srgb, var(--bad) 30%, transparent); box-shadow: none; }
+.btn.logout:hover { background: var(--bad-solid); color: #fff; }
+.acct-head { display: flex; align-items: flex-start; gap: 12px; }
+.acct-head .grow { flex: 1; min-width: 0; }
 .btn.sm { min-height: 40px; font-size: 14px; padding: 0 14px; border-radius: 10px; }
 .btn.sm svg { width: 17px; height: 17px; }
 .btn:disabled { opacity: .5; cursor: default; transform: none; }
