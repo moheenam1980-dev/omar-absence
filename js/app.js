@@ -30,6 +30,24 @@
     return '<div class="datef"><input class="inp num" id="' + id + 'Txt" dir="ltr" readonly tabindex="-1" aria-hidden="true" value="' + esc(val) + '">' +
            '<input type="date" class="date-native" id="' + id + '" value="' + esc(val) + '" max="' + today() + '" aria-label="التاريخ (سنة-شهر-يوم)"></div>';
   }
+  /** الوقت الحالي بصيغة 24 ساعة HH:mm (هكذا يُحفظ في الخادم) */
+  function nowTime() { var d = new Date(); return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2); }
+  /** عرض الوقت بصيغة 12 ساعة: 08:30 ← 8:30 ص */
+  function fmtTime(t) {
+    var m = /^(\d{1,2}):(\d{2})/.exec(String(t || ''));
+    if (!m) return '';
+    var h = Number(m[1]);
+    return (h % 12 || 12) + ':' + m[2] + (h < 12 ? ' ص' : ' م');
+  }
+  var DAYS = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+  /** اسم اليوم من تاريخ بصيغة سنة-شهر-يوم */
+  function dayName(s) {
+    var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(s || ''));
+    return m ? DAYS[new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])).getDay()] : '';
+  }
+  function timeField(id, val) {
+    return '<input type="time" class="inp num" id="' + id + '" dir="ltr" value="' + esc(val) + '" aria-label="الوقت">';
+  }
   function fmt(n) { return (Math.round(n * 10) / 10).toString(); }
   function byName(a, b) { return a.name.localeCompare(b.name, 'ar', { numeric: true }); }
   function go(hash) { if (location.hash === hash) render(); else location.hash = hash; }
@@ -298,8 +316,9 @@
       return mount(h, 'home');
     }
     h += '<label class="f">نوع المحاضرة</label><div class="seg" id="tkType"><button type="button" class="on" data-v="نظري">نظري</button><button type="button" data-v="عملي">عملي</button></div>' +
-         '<div class="row"><div class="col-date"><label class="f" for="tkDate">التاريخ</label>' + dateField('tkDate', today()) + '</div>' +
-         '<div class="col-small"><label class="f" for="tkHours">عدد الساعات</label><select class="inp" id="tkHours">' + opts + '</select></div></div>' +
+         '<label class="f" for="tkDate">التاريخ</label>' + dateField('tkDate', today()) +
+         '<div class="row"><div><label class="f" for="tkTime">وقت المحاضرة</label>' + timeField('tkTime', nowTime()) + '</div>' +
+         '<div><label class="f" for="tkHours">عدد الساعات</label><select class="inp" id="tkHours">' + opts + '</select></div></div>' +
          '<div class="muted" style="margin-top:10px;font-size:14px">عدد الطلبة المسجلين في المادة: ' + n +
          '<br>الطالب الذي لم يختر هذه المادة لا يظهر في القائمة ولا يُسجَّل عليه غياب.</div></div>' +
          '<button class="btn ok block" data-act="startTake" data-t="' + esc(tid) + '">' + ICON.camera + 'بدء المسح بالكاميرا</button>';
@@ -322,7 +341,7 @@
   function saveDraft() { store.set('draft', S.draft); }
   function headBox(c) {
     return '<div class="card scan-head"><b>' + esc(c.t.name) + '</b> · ' + esc(c.d.type) + '<br>' + esc(tLabel(c.t)) +
-           '<br><span class="num">' + esc(c.d.date) + '</span> · ' + esc(c.d.hours) + ' ساعة</div>';
+           '<br>' + esc(dayName(c.d.date)) + ' <span class="num">' + esc(c.d.date) + '</span>' + (c.d.time ? ' · ' + esc(fmtTime(c.d.time)) : '') + ' · ' + esc(c.d.hours) + ' ساعة</div>';
   }
   function viewScan() {
     DR = draftCtx();
@@ -481,7 +500,7 @@
           '<div class="sticky-actions"><button class="btn ghost" data-go="#/scan">رجوع للمسح</button><button class="btn ok" id="sendBtn" data-act="send">تأكيد وإرسال</button></div>', 'home');
   }
   function draftPayload(c) {
-    return { sid: c.d.sid, t_id: c.d.t_id, type: c.d.type, date: c.d.date, hours: c.d.hours,
+    return { sid: c.d.sid, t_id: c.d.t_id, type: c.d.type, date: c.d.date, time: c.d.time || '', hours: c.d.hours,
              abs: c.roster.filter(function (s) { return !c.d.present[s.id]; }).map(function (s) { return { id: s.id, status: c.d.exc[s.id] ? 'مجاز' : 'غائب' }; }) };
   }
   function sendDraft(force) {
@@ -538,7 +557,7 @@
   function sessCard(s, showIns) {
     return '<div class="card" data-go="#/session/' + esc(s.id) + '" style="cursor:pointer"><div class="wrap" style="justify-content:space-between"><b>' + esc(s.course) + '</b>' +
            '<span class="chip ' + (num(s.absent) ? 'bad' : 'ok') + '">غياب ' + esc(s.absent) + ' / ' + esc(s.total) + '</span></div>' +
-           '<div class="muted" style="font-size:14px;margin-top:4px"><span class="num">' + esc(s.date) + '</span> · ' + esc(s.type) + ' · ' + esc(s.hours) + ' ساعة · المرحلة ' + esc(s.stage) +
+           '<div class="muted" style="font-size:14px;margin-top:4px">' + esc(dayName(s.date)) + ' <span class="num">' + esc(s.date) + '</span>' + (s.time ? ' · ' + esc(fmtTime(s.time)) : '') + ' · ' + esc(s.type) + ' · ' + esc(s.hours) + ' ساعة · المرحلة ' + esc(s.stage) +
            (s.study ? ' · ' + esc(s.study) : '') + (showIns ? ' · ' + esc(s.ins) : '') + '</div></div>';
   }
   function viewSessions() {
@@ -562,8 +581,9 @@
       mount(title('تفاصيل المحاضرة', back) +
         '<div class="card scan-head"><b>' + esc(s.course) + '</b><br>' + esc(S.deptName[s.dept_id] || '') + ' · المرحلة ' + esc(s.stage) + (s.study ? ' · ' + esc(s.study) : '') +
         (s.ins ? '<br>التدريسي: ' + esc(s.ins) : '') + '</div>' +
-        '<div class="card"><div class="row"><div class="col-date"><label class="f" for="sdDate">التاريخ</label>' + dateField('sdDate', s.date) + '</div>' +
-        '<div class="col-small"><label class="f" for="sdHours">الساعات</label><select class="inp" id="sdHours">' + opts + '</select></div>' +
+        '<div class="card"><div class="row"><div><label class="f" for="sdDate">التاريخ</label>' + dateField('sdDate', s.date) + '</div>' +
+        '<div><label class="f" for="sdTime">الوقت</label>' + timeField('sdTime', s.time || '') + '</div></div>' +
+        '<div class="row"><div class="col-small"><label class="f" for="sdHours">الساعات</label><select class="inp" id="sdHours">' + opts + '</select></div>' +
         '<div class="col-mid"><label class="f" for="sdType">النوع</label><select class="inp" id="sdType"><option' + (s.type === 'نظري' ? ' selected' : '') + '>نظري</option><option' + (s.type === 'عملي' ? ' selected' : '') + '>عملي</option></select></div></div></div>' +
         '<div class="card">' + countsHtml() + listHelp + plist() + '</div>' +
         '<div class="sticky-actions"><button class="btn bad" data-act="delSession" data-id="' + esc(id) + '" style="flex:.5">حذف</button>' +
@@ -588,7 +608,7 @@
       var rows = d.roster.map(function (x) {
         var a = d.agg[x[0]] || [0, 0, 0], st = absStatus(a[0], a[1], d.course);
         cnt[st.l]++;
-        return { id: x[0], name: x[1], abs: a[0], exc: a[1], pct: st.pct, tpct: st.tpct, l: st.l };
+        return { id: x[0], name: x[1], abs: a[0], exc: a[1], pct: st.pct, tpct: st.tpct, l: st.l, det: (d.det || {})[x[0]] || [] };
       }).sort(function (a, b) { return b.l - a.l || b.pct - a.pct || b.tpct - a.tpct || byName(a, b); });
       REPORT = { d: d, rows: rows, den: den };
       var h = title('تقرير المادة', back) + '<div class="card scan-head"><b>' + esc(d.course.name) + '</b><br>' + esc(S.deptName[d.course.dept_id] || '') + ' · المرحلة ' + esc(d.course.stage) +
@@ -601,20 +621,44 @@
       h += '<div class="stats"><div class="stat"><b>' + rows.length + '</b><span>عدد الطلبة</span></div>' + [1, 2, 3].map(function (l) {
         return '<div class="stat"><b style="color:' + ['', '#b98500', 'var(--warn)', 'var(--bad)'][l] + '">' + cnt[l] + '</b><span>' + esc(levelName(l)) + '</span></div>'; }).join('') + '</div>' +
         '<div class="toolbar no-print"><button class="btn sm soft" data-act="xlsReport">' + ICON.excel + 'تصدير إكسل</button><button class="btn sm ghost" data-act="print">' + ICON.print + 'طباعة</button></div>' +
-        '<div class="tbl-wrap"><table class="tbl"><thead><tr><th class="c">#</th><th>اسم الطالب</th><th class="c">غياب (ساعة)</th><th class="c">مجاز (ساعة)</th><th class="c">بدون عذر %</th><th class="c">مع المجاز %</th><th class="c">الحالة</th></tr></thead><tbody>' +
+        '<div class="tbl-wrap"><table class="tbl"><thead><tr><th class="c">#</th><th>اسم الطالب</th><th class="c">غياب (ساعة)</th><th class="c">مجاز (ساعة)</th><th class="c">بدون عذر %</th><th class="c">مع المجاز %</th><th class="c">الحالة</th>' +
+        (d.det ? '<th>تواريخ الغياب والإجازة</th>' : '') + '</tr></thead><tbody>' +
         rows.map(function (r, i) {
           return '<tr class="l' + r.l + '"><td class="c">' + (i + 1) + '</td><td class="w">' + esc(r.name) + '</td><td class="c num">' + fmt(r.abs) + '</td><td class="c num">' + fmt(r.exc) +
-                 '</td><td class="c num">' + (den ? fmt(r.pct) + '%' : '-') + '</td><td class="c num">' + (den ? fmt(r.tpct) + '%' : '-') + '</td><td class="c">' + (den ? levelChip(r.l) : '-') + '</td></tr>';
+                 '</td><td class="c num">' + (den ? fmt(r.pct) + '%' : '-') + '</td><td class="c num">' + (den ? fmt(r.tpct) + '%' : '-') + '</td><td class="c">' + (den ? levelChip(r.l) : '-') + '</td>' +
+                 (d.det ? '<td>' + detCell(r, i) + '</td>' : '') + '</tr>';
         }).join('') + '</tbody></table></div>';
       if (d.sessions.length) {
-        h += '<h2 class="page-title no-print" style="font-size:17px;margin-top:18px">المحاضرات</h2><div class="tbl-wrap no-print"><table class="tbl"><thead><tr><th>التاريخ</th><th>النوع</th><th class="c">الساعات</th><th class="c">الغياب</th><th></th></tr></thead><tbody>' +
+        h += '<h2 class="page-title no-print" style="font-size:17px;margin-top:18px">المحاضرات</h2><div class="tbl-wrap no-print"><table class="tbl"><thead><tr><th>اليوم</th><th>التاريخ</th><th>الوقت</th><th>النوع</th><th class="c">الساعات</th><th class="c">الغياب</th><th></th></tr></thead><tbody>' +
           d.sessions.map(function (s) {
-            return '<tr><td class="num">' + esc(s.date) + '</td><td>' + esc(s.type) + '</td><td class="c">' + esc(s.hours) + '</td><td class="c">' + esc(s.absent) + ' / ' + esc(s.total) +
+            return '<tr><td>' + esc(dayName(s.date)) + '</td><td class="num">' + esc(s.date) + '</td><td class="num">' + esc(fmtTime(s.time) || '-') + '</td><td>' + esc(s.type) + '</td><td class="c">' + esc(s.hours) + '</td><td class="c">' + esc(s.absent) + ' / ' + esc(s.total) +
                    '</td><td><button class="icon-btn" data-go="#/session/' + esc(s.id) + '">فتح</button></td></tr>';
           }).join('') + '</tbody></table></div>';
       }
       mount(h, nav, true);
     }).catch(function (e) { mount(title('تقرير المادة', back) + '<div class="note bad">' + esc(e.message) + '</div>', nav); });
+  }
+  /** خلية تواريخ الغياب في جدول التقرير: زر «التفاصيل» على الشاشة، وقائمة مختصرة عند الطباعة */
+  function detCell(r, i) {
+    if (!r.det.length) return '<span class="muted">-</span>';
+    var nA = 0, nE = 0;
+    r.det.forEach(function (x) { if (x[4] === 'مجاز') nE++; else nA++; });
+    return '<button class="icon-btn no-print" data-act="absDetail" data-i="' + i + '">' + (nA ? nA + ' غياب' : '') + (nA && nE ? ' · ' : '') + (nE ? nE + ' مجاز' : '') + '</button>' +
+           '<span class="print-only det-print">' + r.det.map(function (x) {
+             return '<span class="num">' + esc(x[0]) + '</span> ' + esc(fmtTime(x[1])) + (x[4] === 'مجاز' ? ' (مجاز)' : '');
+           }).join('<br>') + '</span>';
+  }
+  /** نافذة تفاصيل غياب طالب: كل تاريخ ويوم ووقت وحالة */
+  function absDetailDialog(r) {
+    var R = REPORT;
+    modal('<h3>' + esc(r.name) + '</h3><div class="muted" style="font-size:13.5px;margin-bottom:12px">' + esc(R.d.course.name) +
+          ' · غياب ' + fmt(r.abs) + ' ساعة · مجاز ' + fmt(r.exc) + ' ساعة' + (R.den ? ' · ' + levelChip(r.l) : '') + '</div>' +
+          '<ul class="det-list">' + r.det.map(function (x) {
+            var e = x[4] === 'مجاز';
+            return '<li class="' + (e ? 'e' : 'a') + '"><div class="dl-day">' + esc(dayName(x[0])) + '<span class="num">' + esc(x[0]) + '</span></div>' +
+                   '<div class="dl-info"><b>' + esc(fmtTime(x[1]) || '—') + '</b><span>' + esc(x[2]) + ' · ' + esc(x[3]) + ' ساعة</span>' + (x[5] ? '<small>' + esc(x[5]) + '</small>' : '') + '</div>' +
+                   '<span class="chip ' + (e ? 'warn' : 'bad') + '">' + (e ? 'مجاز' : 'غائب') + '</span></li>';
+          }).join('') + '</ul><button class="btn ghost block" data-act="closeModal" style="margin-top:14px">إغلاق</button>');
   }
   function exportXlsx(name, sheets) {
     return loadScript('lib/xlsx.full.min.js').then(function () {
@@ -697,7 +741,7 @@
       var begin = function () {
         initAudio();
         S.draft = { sid: 'S' + Date.now().toString(36) + Math.random().toString(36).substr(2, 6), t_id: t.t_id, type: $('#tkType .on').dataset.v,
-                    date: date, hours: num($('#tkHours').value), present: {}, exc: {} };
+                    date: date, time: $('#tkTime').value || nowTime(), hours: num($('#tkHours').value), present: {}, exc: {} };
         saveDraft(); go('#/scan');
       };
       if (S.draft && teach(S.draft.t_id)) confirmBox('لديك محاضرة سابقة لم تُرسل. بدء محاضرة جديدة سيحذفها.', 'ابدأ الجديدة', true).then(function (y) { if (y) begin(); });
@@ -731,7 +775,7 @@
       var abs = LIST.roster.filter(function (s) { return LIST.st[s.id] && LIST.st[s.id] !== 'p'; })
                            .map(function (s) { return { id: s.id, status: LIST.st[s.id] === 'e' ? 'مجاز' : 'غائب' }; });
       el.disabled = true;
-      api('updateSession', { payload: { session_id: el.dataset.id, date: $('#sdDate').value, hours: $('#sdHours').value, type: $('#sdType').value, abs: abs } })
+      api('updateSession', { payload: { session_id: el.dataset.id, date: $('#sdDate').value, time: $('#sdTime').value, hours: $('#sdHours').value, type: $('#sdType').value, abs: abs } })
         .then(function () { toast('تم حفظ التعديلات', 'ok'); history.back(); }).catch(function (e) { el.disabled = false; fail(e); });
     },
     delSession: function (el) {
@@ -743,8 +787,18 @@
     xlsReport: function () {
       var R = REPORT, d = R.d, rows = [['#', 'رقم الطالب', 'اسم الطالب', 'غياب (ساعة)', 'مجاز (ساعة)', 'بدون عذر %', 'مع المجاز %', 'الحالة']];
       R.rows.forEach(function (r, i) { rows.push([i + 1, r.id, r.name, r.abs, r.exc, R.den ? Math.round(r.pct * 10) / 10 : '', R.den ? Math.round(r.tpct * 10) / 10 : '', R.den ? levelName(r.l) : '']); });
-      exportXlsx('غيابات ' + d.course.name + (d.study ? ' ' + d.study : ''),[{ name: 'الغيابات', rows: rows }]);
-    }
+      var sheets = [{ name: 'الغيابات', rows: rows }];
+      if (d.det) {
+        // ورقة ثانية: سطر لكل غياب أو إجازة بتاريخه ووقته (لإبلاغ الطلبة)
+        var det = [['رقم الطالب', 'اسم الطالب', 'التاريخ', 'اليوم', 'الوقت', 'نوع المحاضرة', 'الساعات', 'الحالة', 'ملاحظة']];
+        R.rows.forEach(function (r) {
+          r.det.forEach(function (x) { det.push([r.id, r.name, x[0], dayName(x[0]), fmtTime(x[1]), x[2], x[3], x[4], x[5] || '']); });
+        });
+        sheets.push({ name: 'تفاصيل الغياب', rows: det });
+      }
+      exportXlsx('غيابات ' + d.course.name + (d.study ? ' ' + d.study : ''), sheets);
+    },
+    absDetail: function (el) { var r = REPORT && REPORT.rows[el.dataset.i]; if (r) absDetailDialog(r); }
   };
   document.addEventListener('click', function (ev) {
     var el = ev.target.closest('[data-act],[data-go]');

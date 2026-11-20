@@ -1,6 +1,6 @@
 /* عامل الخدمة: يجعل النظام يفتح فوراً من ذاكرة الهاتف ثم يحدّث نفسه في الخلفية.
    عند تعديل أي ملف في المستودع غيّر رقم النسخة هنا ليصل التحديث للجميع. */
-var CACHE = 'absence-v4.0.0';
+var CACHE = 'absence-v4.1.0';
 var SHELL = ['./', 'index.html', 'css/app.css', 'js/config.js', 'js/app.js', 'js/admin.js', 'css/cards.css',
   'img/logo.jpg', 'img/icon-192.png', 'manifest.json', 'lib/html5-qrcode.min.js',
   'fonts/tajawal-arabic-400-normal.woff2', 'fonts/tajawal-arabic-500-normal.woff2', 'fonts/tajawal-arabic-700-normal.woff2',
