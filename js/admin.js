@@ -287,9 +287,11 @@
   VIEW.settings = function () {
     var s = S.boot.settings;
     var inp = function (k, label, type) { return '<div><label class="f" for="set_' + k + '">' + label + '</label><input class="inp" id="set_' + k + '" value="' + esc(s[k]) + '"' + (type ? ' type="number" min="0" step="any"' : '') + '></div>'; };
-    frame('<form id="setForm"><div class="card"><h3>الإنذارات</h3><div class="muted" style="font-size:14px">تُحسب النسبة من ساعات غياب الطالب إلى الساعات الكلية للمادة.</div>' +
-      [1, 2, 3].map(function (i) { return '<div class="row">' + inp('warn' + i + '_pct', 'النسبة ' + i + ' (%)', 1) + inp('warn' + i + '_label', 'التسمية') + '</div>'; }).join('') +
-      '<label class="f" for="set_count_excused">هل تُحتسب ساعات الإجازة ضمن النسبة؟</label><select class="inp" id="set_count_excused">' + opt(['لا', 'نعم'], s.count_excused) + '</select></div>' +
+    var WL = ['', 'التنبيه: غياب بدون عذر (%)', 'الإنذار النهائي: غياب بدون عذر (%) — تجاوزه رسوب', 'الحد الأقصى مع العذر المشروع: غياب + مجاز (%) — تجاوزه رسوب'];
+    frame('<form id="setForm"><div class="card"><h3>الإنذارات (دليل الطالب لمسار بولونيا)</h3><div class="muted" style="font-size:14px">' +
+      'النسبة من الساعات الكلية للمادة (الساعات الأسبوعية × 15 أسبوعاً). 7% تعادل ساعات المادة في أسبوع واحد، و14% أسبوعين، و21% ثلاثة أسابيع. ' +
+      'الإجازة (المجاز) لا تدخل في نسبتي التنبيه والإنذار، لكنها تُحسب ضمن حد الـ21%.</div>' +
+      [1, 2, 3].map(function (i) { return '<div class="row">' + inp('warn' + i + '_pct', WL[i], 1) + inp('warn' + i + '_label', 'التسمية') + '</div>'; }).join('') + '</div>' +
       '<div class="card"><h3>عام</h3><label class="f" for="set_current_semester">الفصل الدراسي الحالي</label><select class="inp" id="set_current_semester">' + opt(['الأول', 'الثاني'], s.current_semester) + '</select>' +
       inp('stages', 'المراحل بالترتيب (مفصولة بفاصلة)') + '<div class="row">' + inp('default_hours', 'ساعات المحاضرة الافتراضية', 1) + inp('login_days', 'مدة بقاء الدخول (يوم)', 1) + '</div>' +
       inp('college_name', 'اسم الكلية') + inp('university_name', 'اسم الجامعة') + '</div><button class="btn ok block">حفظ الإعدادات</button></form>');
@@ -329,15 +331,16 @@
     d.courses.forEach(function (c) { cs[c.c_id] = c; });
     d.students.forEach(function (x) { st[x[0]] = x; });
     var rows = d.rows.map(function (r) {
-      var c = cs[r[1]] || {}, den = A.denom(c), pct = den ? A.counted(r[2], r[3]) / den * 100 : 0, x = st[r[0]] || [r[0], r[0]];
-      return { id: r[0], name: x[1], stage: c.stage || '', course: c.name || '', abs: r[2], exc: r[3], pct: pct, den: den, l: den ? A.level(pct) : 0 };
-    }).filter(function (r) { return r.l >= minL && (r.abs || r.exc); }).sort(function (a, b) { return b.pct - a.pct || a.name.localeCompare(b.name, 'ar'); });
+      var c = cs[r[1]] || {}, s = A.absStatus(r[2], r[3], c), x = st[r[0]] || [r[0], r[0]];
+      return { id: r[0], name: x[1], stage: c.stage || '', course: c.name || '', abs: r[2], exc: r[3], pct: s.pct, tpct: s.tpct, den: s.den, l: s.l };
+    }).filter(function (r) { return r.l >= minL && (r.abs || r.exc); })
+      .sort(function (a, b) { return b.l - a.l || b.pct - a.pct || b.tpct - a.tpct || a.name.localeCompare(b.name, 'ar'); });
     DREP = rows;
     $('#rBox').innerHTML = '<div class="toolbar"><span class="muted">عدد الحالات: ' + rows.length + '</span><span class="sp"></span>' +
       (rows.length ? '<button class="btn sm soft" data-act="aXlsDept">تصدير إكسل</button><button class="btn sm ghost" data-act="print">طباعة</button>' : '') + '</div>' +
-      table(['الطالب', 'الرقم', 'المادة', 'مرحلة المادة', 'غياب (س)', 'مجاز (س)', 'النسبة', 'الحالة'], rows.map(function (r) {
+      table(['الطالب', 'الرقم', 'المادة', 'مرحلة المادة', 'غياب (س)', 'مجاز (س)', 'بدون عذر %', 'مع المجاز %', 'الحالة'], rows.map(function (r) {
         return '<tr class="l' + r.l + '"><td class="w">' + esc(r.name) + '</td><td class="num">' + esc(r.id) + '</td><td class="w">' + esc(r.course) + '</td><td>' + esc(r.stage) + '</td><td class="num">' + fmt(r.abs) +
-               '</td><td class="num">' + fmt(r.exc) + '</td><td class="num">' + (r.den ? fmt(r.pct) + '%' : '-') + '</td><td>' + (r.den ? A.levelChip(r.l) : '-') + '</td></tr>';
+               '</td><td class="num">' + fmt(r.exc) + '</td><td class="num">' + (r.den ? fmt(r.pct) + '%' : '-') + '</td><td class="num">' + (r.den ? fmt(r.tpct) + '%' : '-') + '</td><td>' + (r.den ? A.levelChip(r.l) : '-') + '</td></tr>';
       }), 'لا توجد حالات ضمن هذا الاختيار') + '<div style="height:12px"></div>';
   }
 
@@ -610,8 +613,8 @@
         .catch(function (e) { $('#rBox').innerHTML = ''; fail(e); }).then(function () { el.disabled = false; });
     },
     aXlsDept: function () {
-      var rows = [['رقم الطالب', 'الاسم', 'المادة', 'مرحلة المادة', 'غياب (ساعة)', 'مجاز (ساعة)', 'النسبة %', 'الحالة']];
-      DREP.forEach(function (r) { rows.push([r.id, r.name, r.course, r.stage, r.abs, r.exc, r.den ? Math.round(r.pct * 10) / 10 : '', r.den ? A.levelName(r.l) : '']); });
+      var rows = [['رقم الطالب', 'الاسم', 'المادة', 'مرحلة المادة', 'غياب (ساعة)', 'مجاز (ساعة)', 'بدون عذر %', 'مع المجاز %', 'الحالة']];
+      DREP.forEach(function (r) { rows.push([r.id, r.name, r.course, r.stage, r.abs, r.exc, r.den ? Math.round(r.pct * 10) / 10 : '', r.den ? Math.round(r.tpct * 10) / 10 : '', r.den ? A.levelName(r.l) : '']); });
       A.exportXlsx('إنذارات ' + deptName(M.dept), [{ name: 'الإنذارات', rows: rows }]);
     },
     aCourseReport: function () {

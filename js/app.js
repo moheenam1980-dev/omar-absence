@@ -127,13 +127,23 @@
     return (S.deptName[t.dept_id] || '') + ' · المرحلة ' + t.stage + (t.study ? ' · ' + t.study : '');
   }
   function denom(c) { return num(c.total_hours) || num(c.w_hours) * 15 || 0; }
-  function level(pct) {
-    var s = S.boot.settings;
-    return pct >= num(s.warn3_pct) ? 3 : pct >= num(s.warn2_pct) ? 2 : pct >= num(s.warn1_pct) ? 1 : 0;
+  /** حالة الطالب في مادة حسب دليل الطالب لمسار بولونيا (متطلبات الدوام):
+      - تنبيه عند غياب 7% بدون عذر (= ساعات المادة في أسبوع دراسي)
+      - إنذار نهائي عند غياب 14% بدون عذر (= أسبوعان)
+      - راسب بالغياب إذا تجاوز الغياب بدون عذر 14%، أو تجاوز مجموع الغياب مع المجاز 21% (= ثلاثة أسابيع، الحد مع العذر المشروع)
+      الحد بالساعات = الأقل بين النسبة من الساعات الكلية وما يعادلها من أسابيع (7% = أسبوع واحد) */
+  function absStatus(abs, exc, c) {
+    var s = S.boot.settings, den = denom(c), w = num(c.w_hours);
+    if (!den) return { l: 0, pct: 0, tpct: 0, den: 0 };
+    var lim = function (p) { var h = den * p / 100; return w ? Math.min(h, w * p / 7) : h; };
+    var p1 = num(s.warn1_pct) || 7, p2 = num(s.warn2_pct) || 14, p3 = num(s.warn3_pct) || 21, l = 0, eps = 1e-9;
+    if (abs + eps >= lim(p1)) l = 1;
+    if (abs + eps >= lim(p2)) l = 2;
+    if (abs > lim(p2) + eps || abs + exc > lim(p3) + eps) l = 3;
+    return { l: l, pct: abs / den * 100, tpct: (abs + exc) / den * 100, den: den };
   }
   function levelName(l) { var s = S.boot.settings; return l ? s['warn' + l + '_label'] : 'طبيعي'; }
   function levelChip(l) { return '<span class="chip ' + ['ok', 'gold', 'warn', 'bad'][l] + '">' + esc(levelName(l)) + '</span>'; }
-  function counted(abs, exc) { return abs + (S.boot.settings.count_excused === 'نعم' ? exc : 0); }
 
   /* ---------------- الصوت والاهتزاز ---------------- */
   var audioCtx = null;
@@ -567,22 +577,25 @@
     api('courseReport', q).then(function (d) {
       var den = denom(d.course), cnt = [0, 0, 0, 0];
       var rows = d.roster.map(function (x) {
-        var a = d.agg[x[0]] || [0, 0, 0], c = counted(a[0], a[1]), pct = den ? c / den * 100 : 0, l = den ? level(pct) : 0;
-        cnt[l]++;
-        return { id: x[0], name: x[1], abs: a[0], exc: a[1], pct: pct, l: l };
-      }).sort(function (a, b) { return b.pct - a.pct || b.abs - a.abs || byName(a, b); });
+        var a = d.agg[x[0]] || [0, 0, 0], st = absStatus(a[0], a[1], d.course);
+        cnt[st.l]++;
+        return { id: x[0], name: x[1], abs: a[0], exc: a[1], pct: st.pct, tpct: st.tpct, l: st.l };
+      }).sort(function (a, b) { return b.l - a.l || b.pct - a.pct || b.tpct - a.tpct || byName(a, b); });
       REPORT = { d: d, rows: rows, den: den };
       var h = title('تقرير المادة', back) + '<div class="card scan-head"><b>' + esc(d.course.name) + '</b><br>' + esc(S.deptName[d.course.dept_id] || '') + ' · المرحلة ' + esc(d.course.stage) +
         (d.study ? ' · ' + esc(d.study) : '') + '<br>الطلبة الذين اختاروا المادة: ' + d.roster.length + ' · المحاضرات المسجلة: ' + d.sessions.length + ' (' + fmt(d.held) + ' ساعة)' +
         (den ? ' · ساعات المادة الكلية: ' + fmt(den) : '') + '</div>';
       if (!den) h += '<div class="note warn">لم تُحدَّد الساعات الكلية لهذه المادة، لذلك لا تُحسب النسب. يحددها الأدمن من «المواد».</div>';
+      else h += '<div class="note no-print" style="font-size:13.5px">حسب دليل الطالب لمسار بولونيا: ' + esc(levelName(1)) + ' عند غياب ' + esc(S.boot.settings.warn1_pct) + '% بدون عذر، و' +
+                esc(levelName(2)) + ' عند ' + esc(S.boot.settings.warn2_pct) + '%، و' + esc(levelName(3)) + ' إذا تجاوز الغياب بدون عذر ' + esc(S.boot.settings.warn2_pct) +
+                '% أو تجاوز مجموع الغياب والمجاز ' + esc(S.boot.settings.warn3_pct) + '%.</div>';
       h += '<div class="stats"><div class="stat"><b>' + rows.length + '</b><span>عدد الطلبة</span></div>' + [1, 2, 3].map(function (l) {
         return '<div class="stat"><b style="color:' + ['', '#b98500', 'var(--warn)', 'var(--bad)'][l] + '">' + cnt[l] + '</b><span>' + esc(levelName(l)) + '</span></div>'; }).join('') + '</div>' +
         '<div class="toolbar no-print"><button class="btn sm soft" data-act="xlsReport">تصدير إكسل</button><button class="btn sm ghost" data-act="print">طباعة</button></div>' +
-        '<div class="tbl-wrap"><table class="tbl"><thead><tr><th class="c">#</th><th>اسم الطالب</th><th class="c">غياب (ساعة)</th><th class="c">مجاز (ساعة)</th><th class="c">النسبة</th><th class="c">الحالة</th></tr></thead><tbody>' +
+        '<div class="tbl-wrap"><table class="tbl"><thead><tr><th class="c">#</th><th>اسم الطالب</th><th class="c">غياب (ساعة)</th><th class="c">مجاز (ساعة)</th><th class="c">بدون عذر %</th><th class="c">مع المجاز %</th><th class="c">الحالة</th></tr></thead><tbody>' +
         rows.map(function (r, i) {
           return '<tr class="l' + r.l + '"><td class="c">' + (i + 1) + '</td><td class="w">' + esc(r.name) + '</td><td class="c num">' + fmt(r.abs) + '</td><td class="c num">' + fmt(r.exc) +
-                 '</td><td class="c num">' + (den ? fmt(r.pct) + '%' : '-') + '</td><td class="c">' + (den ? levelChip(r.l) : '-') + '</td></tr>';
+                 '</td><td class="c num">' + (den ? fmt(r.pct) + '%' : '-') + '</td><td class="c num">' + (den ? fmt(r.tpct) + '%' : '-') + '</td><td class="c">' + (den ? levelChip(r.l) : '-') + '</td></tr>';
         }).join('') + '</tbody></table></div>';
       if (d.sessions.length) {
         h += '<h2 class="page-title no-print" style="font-size:17px;margin-top:18px">المحاضرات</h2><div class="tbl-wrap no-print"><table class="tbl"><thead><tr><th>التاريخ</th><th>النوع</th><th class="c">الساعات</th><th class="c">الغياب</th><th></th></tr></thead><tbody>' +
@@ -719,8 +732,8 @@
     },
     print: function () { window.print(); },
     xlsReport: function () {
-      var R = REPORT, d = R.d, rows = [['#', 'رقم الطالب', 'اسم الطالب', 'غياب (ساعة)', 'مجاز (ساعة)', 'النسبة %', 'الحالة']];
-      R.rows.forEach(function (r, i) { rows.push([i + 1, r.id, r.name, r.abs, r.exc, R.den ? Math.round(r.pct * 10) / 10 : '', R.den ? levelName(r.l) : '']); });
+      var R = REPORT, d = R.d, rows = [['#', 'رقم الطالب', 'اسم الطالب', 'غياب (ساعة)', 'مجاز (ساعة)', 'بدون عذر %', 'مع المجاز %', 'الحالة']];
+      R.rows.forEach(function (r, i) { rows.push([i + 1, r.id, r.name, r.abs, r.exc, R.den ? Math.round(r.pct * 10) / 10 : '', R.den ? Math.round(r.tpct * 10) / 10 : '', R.den ? levelName(r.l) : '']); });
       exportXlsx('غيابات ' + d.course.name + (d.study ? ' ' + d.study : ''),[{ name: 'الغيابات', rows: rows }]);
     }
   };
@@ -752,7 +765,7 @@
   // ما تحتاجه لوحة الإدارة من هذا الملف
   window.App = { S: S, api: api, esc: esc, norm: norm, num: num, fmt: fmt, toast: toast, fail: fail, modal: modal, closeModal: closeModal, confirmBox: confirmBox,
                  mount: mount, title: title, loading: loading, loadScript: loadScript, loadCss: loadCss, exportXlsx: exportXlsx, store: store, go: go, render: render,
-                 denom: denom, level: level, levelName: levelName, levelChip: levelChip, counted: counted, sessCard: sessCard, refreshBoot: refreshBoot, ROLE: ROLE };
+                 denom: denom, absStatus: absStatus, levelName: levelName, levelChip: levelChip, sessCard: sessCard, refreshBoot: refreshBoot, ROLE: ROLE };
 
   /* ---------------- البدء ---------------- */
   var cached = store.get('boot', null);
