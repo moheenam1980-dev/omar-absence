@@ -1,19 +1,14 @@
 /* نظام غيابات الطلبة - كلية علوم الحاسوب والرياضيات
-   تصميم الواجهة 4.0: نظام ألوان دلالي + وضع ليلي تلقائي + خط IBM Plex Sans Arabic
+   تصميم الواجهة 4.2: نظام ألوان دلالي + وضع ليلي تلقائي + خط تجوال بوزن عادي (الخط العريض للعناوين والأسماء والأرقام فقط)
    (التصميم فقط؛ أسماء الأصناف كما هي ولا تغيير في آلية العمل) */
 
-/* ---------- الخطوط ---------- */
-@font-face { font-family: 'Plex Arabic'; font-weight: 400; font-display: swap; src: url(../fonts/plex-arabic-400.woff2) format('woff2'); unicode-range: U+0600-06FF, U+0750-077F, U+FB50-FDFF, U+FE70-FEFF, U+200C-200E; }
-@font-face { font-family: 'Plex Arabic'; font-weight: 500; font-display: swap; src: url(../fonts/plex-arabic-500.woff2) format('woff2'); unicode-range: U+0600-06FF, U+0750-077F, U+FB50-FDFF, U+FE70-FEFF, U+200C-200E; }
-@font-face { font-family: 'Plex Arabic'; font-weight: 600; font-display: swap; src: url(../fonts/plex-arabic-600.woff2) format('woff2'); unicode-range: U+0600-06FF, U+0750-077F, U+FB50-FDFF, U+FE70-FEFF, U+200C-200E; }
-@font-face { font-family: 'Plex Arabic'; font-weight: 700; font-display: swap; src: url(../fonts/plex-arabic-700.woff2) format('woff2'); unicode-range: U+0600-06FF, U+0750-077F, U+FB50-FDFF, U+FE70-FEFF, U+200C-200E; }
-@font-face { font-family: 'Plex Arabic'; font-weight: 400; font-display: swap; src: url(../fonts/plex-latin-400.woff2) format('woff2'); unicode-range: U+0000-00FF, U+2000-206F; }
-@font-face { font-family: 'Plex Arabic'; font-weight: 500; font-display: swap; src: url(../fonts/plex-latin-500.woff2) format('woff2'); unicode-range: U+0000-00FF, U+2000-206F; }
-@font-face { font-family: 'Plex Arabic'; font-weight: 600; font-display: swap; src: url(../fonts/plex-latin-600.woff2) format('woff2'); unicode-range: U+0000-00FF, U+2000-206F; }
-@font-face { font-family: 'Plex Arabic'; font-weight: 700; font-display: swap; src: url(../fonts/plex-latin-700.woff2) format('woff2'); unicode-range: U+0000-00FF, U+2000-206F; }
-/* خط الهويات المطبوعة يبقى كما هو (يُستخدم في cards.css وفي احتياطي الواجهة) */
+/* ---------- الخطوط (تجوال، محلية لتعمل بدون إنترنت) ---------- */
+@font-face { font-family: 'Tajawal'; font-weight: 400; font-display: swap; src: url(../fonts/tajawal-arabic-400-normal.woff2) format('woff2'); unicode-range: U+0600-06FF, U+0750-077F, U+FB50-FDFF, U+FE70-FEFF, U+200C-200E; }
 @font-face { font-family: 'Tajawal'; font-weight: 500; font-display: swap; src: url(../fonts/tajawal-arabic-500-normal.woff2) format('woff2'); unicode-range: U+0600-06FF, U+0750-077F, U+FB50-FDFF, U+FE70-FEFF, U+200C-200E; }
-
+@font-face { font-family: 'Tajawal'; font-weight: 700; font-display: swap; src: url(../fonts/tajawal-arabic-700-normal.woff2) format('woff2'); unicode-range: U+0600-06FF, U+0750-077F, U+FB50-FDFF, U+FE70-FEFF, U+200C-200E; }
+@font-face { font-family: 'Tajawal'; font-weight: 400; font-display: swap; src: url(../fonts/tajawal-latin-400-normal.woff2) format('woff2'); unicode-range: U+0000-00FF, U+2000-206F; }
+@font-face { font-family: 'Tajawal'; font-weight: 500; font-display: swap; src: url(../fonts/tajawal-latin-500-normal.woff2) format('woff2'); unicode-range: U+0000-00FF, U+2000-206F; }
+@font-face { font-family: 'Tajawal'; font-weight: 700; font-display: swap; src: url(../fonts/tajawal-latin-700-normal.woff2) format('woff2'); unicode-range: U+0000-00FF, U+2000-206F; }
 /* ---------- الرموز اللونية (فاتح) ---------- */
 :root {
   color-scheme: light;
@@ -65,11 +60,11 @@
 /* ---------- الأساس ---------- */
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html { -webkit-text-size-adjust: 100%; }
-body { margin: 0; font-family: 'Plex Arabic', 'Tajawal', 'Segoe UI', Tahoma, sans-serif; font-weight: 400; font-size: 16px; line-height: 1.65; color: var(--ink);
+body { margin: 0; font-family: 'Tajawal', 'Segoe UI', Tahoma, sans-serif; font-weight: 400; font-size: 16px; line-height: 1.65; color: var(--ink);
   background: var(--bg); min-height: 100vh; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; text-rendering: optimizeLegibility; }
 button, input, select, textarea { font: inherit; color: inherit; }
 h1, h2, h3 { margin: 0; font-weight: 700; line-height: 1.35; text-wrap: balance; letter-spacing: 0; }
-b, strong { font-weight: 600; }
+b, strong { font-weight: 700; }
 a { color: var(--indigo); }
 ::selection { background: rgba(67, 56, 202, .18); }
 .num { font-variant-numeric: tabular-nums; direction: ltr; unicode-bidi: isolate; }
@@ -113,7 +108,7 @@ svg { flex-shrink: 0; }
 .topbar .t1 { font-size: 15.5px; font-weight: 700; line-height: 1.3; color: var(--navy-dark); }
 .topbar .t2 { font-size: 12.5px; color: var(--muted); line-height: 1.35; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .topbar .grow { flex: 1; min-width: 0; }
-.net { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; background: var(--warn-soft); color: var(--warn-ink); border-radius: 999px; padding: 4px 11px; white-space: nowrap; }
+.net { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; background: var(--warn-soft); color: var(--warn-ink); border-radius: 999px; padding: 4px 11px; white-space: nowrap; }
 .net::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
 .net.off { background: var(--bad-soft); color: var(--bad-ink); }
 .net.off::before { animation: blink 1.4s ease-in-out infinite; }
@@ -126,7 +121,7 @@ main#view.wide { max-width: 1200px; }
   border-top: 1px solid var(--line); display: flex; padding: 6px 6px calc(6px + var(--safe-b)); }
 .nav a { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 4px 2px; font-size: 12px; font-weight: 500; color: var(--muted); text-decoration: none; min-height: 56px; justify-content: center; transition: color .2s; }
 .nav a svg { width: 58px; height: 32px; padding: 5px 18px; border-radius: 999px; transition: background-color .25s var(--ease), transform .2s var(--ease); }
-.nav a.on { color: var(--soft-ink); font-weight: 700; }
+.nav a.on { color: var(--soft-ink); font-weight: 500; }
 .nav a.on svg { background: var(--soft); }
 .nav a:active svg { transform: scale(.92); }
 @media (hover: hover) { .nav a:hover { color: var(--ink); } }
@@ -168,7 +163,7 @@ main#view.wide { max-width: 1200px; }
 .wrap { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 
 /* الأزرار */
-.btn { position: relative; border: 1px solid transparent; border-radius: 12px; padding: 0 18px; min-height: 48px; font-weight: 600; font-size: 15.5px; color: #fff; background: var(--primary);
+.btn { position: relative; border: 1px solid transparent; border-radius: 12px; padding: 0 18px; min-height: 48px; font-weight: 500; font-size: 15.5px; color: #fff; background: var(--primary);
   cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; text-decoration: none; white-space: nowrap;
   box-shadow: 0 1px 2px rgba(16, 20, 48, .12), inset 0 1px 0 rgba(255, 255, 255, .14);
   transition: background-color .2s, box-shadow .2s, transform .12s var(--ease), opacity .2s; }
@@ -201,7 +196,7 @@ input[type=time].inp { padding-inline: 10px; min-width: 0; }
 
 /* المحدِّد المقسّم */
 .seg { display: flex; background: var(--hover); border: 1px solid var(--line-2); border-radius: 13px; padding: 4px; gap: 4px; }
-.seg button { flex: 1; border: 0; background: transparent; min-height: 42px; border-radius: 9px; font-weight: 600; color: var(--muted); cursor: pointer; transition: background-color .2s, color .2s, box-shadow .2s; }
+.seg button { flex: 1; border: 0; background: transparent; min-height: 42px; border-radius: 9px; font-weight: 500; color: var(--muted); cursor: pointer; transition: background-color .2s, color .2s, box-shadow .2s; }
 .seg button.on { background: var(--card); color: var(--soft-ink); box-shadow: 0 1px 2px rgba(16, 20, 48, .08), 0 2px 8px -4px rgba(16, 20, 48, .2); }
 
 /* الشارات */
@@ -253,7 +248,7 @@ input[type=time].inp { padding-inline: 10px; min-width: 0; }
 .counter span { font-size: 12.5px; font-weight: 500; color: var(--muted); }
 .counter .p { background: var(--ok-soft); border-color: transparent; } .counter .p b { color: var(--ok); }
 .counter .a { background: var(--bad-soft); border-color: transparent; } .counter .a b { color: var(--bad); }
-.last-scan { min-height: 52px; border-radius: 14px; padding: 12px 14px; text-align: center; font-weight: 600; background: var(--field); border: 1px dashed var(--line); color: var(--muted);
+.last-scan { min-height: 52px; border-radius: 14px; padding: 12px 14px; text-align: center; font-weight: 500; background: var(--field); border: 1px dashed var(--line); color: var(--muted);
   display: flex; align-items: center; justify-content: center; transition: background-color .25s, color .25s; }
 .last-scan.ok { background: var(--ok-soft); color: var(--ok-ink); border: 1px solid color-mix(in srgb, var(--ok) 30%, transparent); animation: pop .25s var(--ease); }
 .last-scan.bad { background: var(--bad-soft); color: var(--bad-ink); border: 1px solid color-mix(in srgb, var(--bad) 30%, transparent); animation: shake .3s; }
@@ -267,7 +262,7 @@ input[type=time].inp { padding-inline: 10px; min-width: 0; }
 .plist li .nm small { display: block; color: var(--muted); font-size: 12px; font-weight: 400; direction: ltr; text-align: right; }
 .plist li.s-a { background: var(--row-a); border-color: var(--row-a-line); }
 .plist li.s-e { background: var(--row-e); border-color: var(--row-e-line); }
-.st-btn { border: 0; border-radius: 999px; min-width: 80px; min-height: 40px; padding: 0 14px; font-weight: 600; font-size: 14px; cursor: pointer; flex-shrink: 0; transition: transform .12s var(--ease), background-color .2s; }
+.st-btn { border: 0; border-radius: 999px; min-width: 80px; min-height: 40px; padding: 0 14px; font-weight: 500; font-size: 14px; cursor: pointer; flex-shrink: 0; transition: transform .12s var(--ease), background-color .2s; }
 .st-btn:active { transform: scale(.94); }
 .st-btn.p { background: var(--ok-soft); color: var(--ok-ink); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ok) 25%, transparent); }
 .st-btn.a { background: var(--bad-solid); color: #fff; box-shadow: 0 4px 12px -6px rgba(225, 29, 72, .7); }
@@ -282,7 +277,7 @@ input[type=time].inp { padding-inline: 10px; min-width: 0; }
 .tbl-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 16px; background: var(--card); box-shadow: var(--shadow); }
 table.tbl { width: 100%; border-collapse: collapse; font-size: 14.5px; }
 .tbl th, .tbl td { padding: 11px 12px; text-align: right; border-bottom: 1px solid var(--line-2); white-space: nowrap; }
-.tbl th { background: var(--field); color: var(--muted); font-weight: 600; font-size: 12.5px; position: sticky; top: 0; border-bottom: 1px solid var(--line); }
+.tbl th { background: var(--field); color: var(--muted); font-weight: 500; font-size: 12.5px; position: sticky; top: 0; border-bottom: 1px solid var(--line); }
 .tbl td.w { white-space: normal; min-width: 150px; font-weight: 500; }
 .tbl td.c, .tbl th.c { text-align: center; }
 .tbl tbody tr { transition: background-color .15s; }
@@ -306,7 +301,7 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14.5px; }
 .det-list li { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 14px; margin-bottom: 8px; background: var(--card); }
 .det-list li.a { background: var(--row-a); border-color: var(--row-a-line); }
 .det-list li.e { background: var(--row-e); border-color: var(--row-e-line); }
-.det-list .dl-day { flex-shrink: 0; min-width: 92px; display: flex; flex-direction: column; font-size: 13px; font-weight: 600; color: var(--ink-2); line-height: 1.4; }
+.det-list .dl-day { flex-shrink: 0; min-width: 92px; display: flex; flex-direction: column; font-size: 13px; font-weight: 500; color: var(--ink-2); line-height: 1.4; }
 .det-list .dl-day .num { font-size: 13px; font-weight: 500; color: var(--muted); }
 .det-list .dl-info { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.45; }
 .det-list .dl-info b { font-size: 16px; color: var(--ink); font-variant-numeric: tabular-nums; }
@@ -318,7 +313,27 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14.5px; }
 .tabs::-webkit-scrollbar { display: none; }
 .tabs a { flex-shrink: 0; padding: 8px 16px; border-radius: 999px; background: var(--card); border: 1px solid var(--line); color: var(--ink-2); text-decoration: none; font-size: 14px; font-weight: 500; min-height: 40px; display: inline-flex; align-items: center; transition: background-color .2s, color .2s, border-color .2s; }
 .tabs a:hover { background: var(--hover); }
-.tabs a.on { background: var(--ink); border-color: var(--ink); color: var(--bg); font-weight: 600; }
+.tabs a.on { background: var(--ink); border-color: var(--ink); color: var(--bg); font-weight: 500; }
+/* قائمة الإدارة: بطاقات بأيقونات كبيرة وتسمية تحت كل أيقونة */
+.tabs.tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 10px; overflow: visible; padding: 0 0 16px; }
+.tabs.tiles a { --c: var(--primary); position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 9px;
+  min-height: 104px; padding: 14px 6px 12px; border-radius: 18px; background: var(--card); border: 1px solid var(--line); box-shadow: var(--shadow);
+  color: var(--ink-2); font-size: 13.5px; font-weight: 500; text-align: center; line-height: 1.3; text-decoration: none;
+  transition: transform .18s var(--ease), box-shadow .18s var(--ease), border-color .18s; }
+.tabs.tiles .ti { width: 50px; height: 50px; border-radius: 15px; display: inline-flex; align-items: center; justify-content: center;
+  color: var(--c); background: color-mix(in srgb, var(--c) 12%, transparent); transition: background-color .18s, color .18s; }
+.tabs.tiles .ti svg { width: 26px; height: 26px; }
+.tabs.tiles .tl { display: block; max-width: 100%; }
+@media (hover: hover) { .tabs.tiles a:hover { transform: translateY(-3px); border-color: color-mix(in srgb, var(--c) 35%, var(--line)); box-shadow: var(--shadow), 0 14px 28px -18px var(--c); } }
+.tabs.tiles a:active { transform: scale(.96); }
+.tabs.tiles a.on { border-color: var(--c); background: color-mix(in srgb, var(--c) 7%, var(--card)); color: var(--ink); font-weight: 700; box-shadow: 0 0 0 1px var(--c), var(--shadow); }
+.tabs.tiles a.on .ti { background: var(--c); color: #fff; }
+/* داخل الصفحات الفرعية: نفس البطاقات في شريط أفقي يُسحب جانبياً حتى لا تدفع المحتوى للأسفل */
+.tabs.tiles.strip { display: flex; overflow-x: auto; gap: 8px; padding: 4px 2px 14px; scroll-snap-type: x proximity; }
+.tabs.tiles.strip a { flex: 0 0 84px; min-height: 86px; padding: 10px 4px 9px; gap: 7px; font-size: 12.5px; border-radius: 16px; scroll-snap-align: start; }
+.tabs.tiles.strip .ti { width: 40px; height: 40px; border-radius: 12px; }
+.tabs.tiles.strip .ti svg { width: 22px; height: 22px; }
+@media (min-width: 900px) { .tabs.tiles { grid-template-columns: repeat(6, 1fr); } .tabs.tiles.strip a { flex-basis: 92px; } }
 .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
 .toolbar .inp { width: auto; flex: 1; min-width: 130px; min-height: 42px; padding: 6px 12px; font-size: 15px; }
 .toolbar .sp { flex: 1; }
@@ -333,7 +348,7 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14.5px; }
 @keyframes up { from { transform: translateY(40px); opacity: 0; } to { transform: none; opacity: 1; } }
 @keyframes fade { from { opacity: 0; } }
 @media (min-width: 600px) { #modal { align-items: center; padding: 16px; } .sheet { border-radius: 24px; padding-top: 24px; } .sheet::before { display: none; } }
-#toast { position: fixed; top: calc(var(--top-h) + 12px); left: 50%; transform: translateX(-50%); z-index: 200; max-width: min(92%, 480px); padding: 12px 18px; border-radius: 14px; color: #fff; font-weight: 600; font-size: 14.5px; text-align: center; display: none;
+#toast { position: fixed; top: calc(var(--top-h) + 12px); left: 50%; transform: translateX(-50%); z-index: 200; max-width: min(92%, 480px); padding: 12px 18px; border-radius: 14px; color: #fff; font-weight: 500; font-size: 14.5px; text-align: center; display: none;
   box-shadow: 0 16px 40px -12px rgba(0, 0, 0, .45), 0 0 0 1px rgba(255, 255, 255, .08) inset; animation: drop .3s var(--ease); }
 #toast.ok { background: #047857; } #toast.bad { background: #be123c; } #toast.info { background: #1e1b5e; }
 @keyframes drop { from { transform: translate(-50%, -10px); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
