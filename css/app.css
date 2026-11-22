@@ -72,7 +72,7 @@ h1, h2, h3 { margin: 0; font-weight: 700; line-height: 1.35; text-wrap: balance;
 b, strong { font-weight: 700; }
 a { color: var(--indigo); }
 ::selection { background: rgba(61, 82, 150, .18); }
-.num { font-variant-numeric: tabular-nums; direction: ltr; unicode-bidi: isolate; }
+.num { font-variant-numeric: tabular-nums; direction: ltr; unicode-bidi: isolate; white-space: nowrap; }
 .muted { color: var(--muted); }
 .hide { display: none !important; }
 :focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
@@ -312,7 +312,7 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: var(--fs-md); }
    تنبيه = ذهبي، إنذار نهائي = برتقالي، راسب بالغياب = أحمر */
 .stat.lv1, .stat.lv2, .stat.lv3 { border-top: 3px solid var(--lvc); }
 .stat.lv1 { --lvc: var(--gold); } .stat.lv1 b { color: var(--gold-ink); }
-.stat.lv2 { --lvc: var(--warn); } .stat.lv2 b { color: var(--warn-ink); }
+.stat.lv2 { --lvc: #ef6c1a; } .stat.lv2 b { color: var(--warn-ink); }
 .stat.lv3 { --lvc: var(--bad); } .stat.lv3 b { color: var(--bad); }
 @media (min-width: 700px) { .stats { grid-template-columns: repeat(4, 1fr); } }
 
