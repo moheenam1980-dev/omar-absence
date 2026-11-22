@@ -279,8 +279,9 @@
       if (!ok) hidden++;
       return ok;
     });
-    var h = '<div class="card hello"><h2>مرحباً، ' + esc(b.user.name) + '</h2><div class="muted">السنة الدراسية <span class="num">' + esc(b.year.name) + '</span>' +
-            ' · الفصل ' + esc(cur) + '</div></div>';
+    // بطاقة الترحيب: الاسم والسنة والفصل، وتاريخ اليوم على الطرف (يحتاجه التدريسي عند تسجيل الغياب)
+    var h = '<div class="card hello"><div class="grow"><h2>مرحباً، ' + esc(b.user.name) + '</h2><div class="muted">السنة الدراسية <span class="num">' + esc(b.year.name) + '</span>' +
+            ' · الفصل ' + esc(cur) + '</div></div><div class="today"><b>' + esc(dayName(today())) + '</b><span class="num">' + esc(today()) + '</span></div></div>';
     if (S.draft && teach(S.draft.t_id)) {
       var dt = teach(S.draft.t_id);
       h += '<div class="note warn"><b>لديك محاضرة لم تُرسل بعد:</b> ' + esc(dt.name) + ' (<span class="num">' + esc(S.draft.date) + '</span>)' +
