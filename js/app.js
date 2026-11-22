@@ -487,7 +487,7 @@
   function countsHtml() {
     var c = listCounts();
     return '<div class="counter" id="cnt"><div class="p"><b>' + c.p + '</b><span>حاضر</span></div><div class="a"><b>' + c.a + '</b><span>غائب</span></div>' +
-           '<div><b style="color:var(--warn)">' + c.e + '</b><span>مجاز</span></div></div>';
+           '<div class="e"><b>' + c.e + '</b><span>مجاز</span></div></div>';
   }
   var listHelp = '<div class="muted" style="font-size:13.5px;margin-bottom:8px">اضغط على حالة الطالب لتغييرها: حاضر ← غائب ← مجاز</div>';
 
@@ -632,7 +632,7 @@
                 esc(levelName(2)) + ' عند ' + esc(S.boot.settings.warn2_pct) + '%، و' + esc(levelName(3)) + ' إذا تجاوز الغياب بدون عذر ' + esc(S.boot.settings.warn2_pct) +
                 '% أو تجاوز مجموع الغياب والمجاز ' + esc(S.boot.settings.warn3_pct) + '%.</div>';
       h += '<div class="stats"><div class="stat"><b>' + rows.length + '</b><span>عدد الطلبة</span></div>' + [1, 2, 3].map(function (l) {
-        return '<div class="stat"><b style="color:' + ['', '#b98500', 'var(--warn)', 'var(--bad)'][l] + '">' + cnt[l] + '</b><span>' + esc(levelName(l)) + '</span></div>'; }).join('') + '</div>' +
+        return '<div class="stat lv' + l + '"><b>' + cnt[l] + '</b><span>' + esc(levelName(l)) + '</span></div>'; }).join('') + '</div>' +
         '<div class="toolbar no-print"><button class="btn sm soft" data-act="xlsReport">' + ICON.excel + 'تصدير إكسل</button><button class="btn sm ghost" data-act="print">' + ICON.print + 'طباعة</button></div>' +
         '<div class="tbl-wrap"><table class="tbl"><thead><tr><th class="c">#</th><th>اسم الطالب</th><th class="c">غياب (ساعة)</th><th class="c">مجاز (ساعة)</th><th class="c">بدون عذر %</th><th class="c">مع المجاز %</th><th class="c">الحالة</th>' +
         (d.det ? '<th>تواريخ الغياب والإجازة</th>' : '') + '</tr></thead><tbody>' +
@@ -670,7 +670,7 @@
             var e = x[4] === 'مجاز';
             return '<li class="' + (e ? 'e' : 'a') + '"><div class="dl-day">' + esc(dayName(x[0])) + '<span class="num">' + esc(x[0]) + '</span></div>' +
                    '<div class="dl-info"><b>' + esc(fmtTime(x[1]) || '—') + '</b><span>' + esc(x[2]) + ' · ' + esc(x[3]) + ' ساعة</span>' + (x[5] ? '<small>' + esc(x[5]) + '</small>' : '') + '</div>' +
-                   '<span class="chip ' + (e ? 'warn' : 'bad') + '">' + (e ? 'مجاز' : 'غائب') + '</span></li>';
+                   '<span class="chip ' + (e ? 'gold' : 'bad') + '">' + (e ? 'مجاز' : 'غائب') + '</span></li>';
           }).join('') + '</ul><button class="btn ghost block" data-act="closeModal" style="margin-top:14px">إغلاق</button>');
   }
   function exportXlsx(name, sheets) {
