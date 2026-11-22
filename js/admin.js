@@ -109,7 +109,7 @@
       else h += '<input class="inp" id="' + id + '" type="' + (f.type || 'text') + '" value="' + esc(f.value === undefined ? '' : f.value) + '"' +
                 (f.ltr ? ' dir="ltr" autocapitalize="none" spellcheck="false"' : '') + (f.req === false ? '' : ' required') + (f.type === 'number' ? ' min="0" step="any" inputmode="decimal"' : '') +
                 (f.readonly ? ' readonly' : '') + ' autocomplete="off">';
-      return h + (f.hint ? '<div class="muted" style="font-size:13px;margin-top:3px">' + esc(f.hint) + '</div>' : '');
+      return h + (f.hint ? '<div class="muted" style="font-size:13.5px;margin-top:3px">' + esc(f.hint) + '</div>' : '');
     }).join('') + '<div class="row" style="margin-top:16px"><button class="btn ok" id="adSave">حفظ</button><button type="button" class="btn ghost" data-act="closeModal">إلغاء</button></div></form>');
     $('#adForm').onsubmit = function (ev) {
       ev.preventDefault();
@@ -307,7 +307,7 @@
     var s = S.boot.settings;
     var inp = function (k, label, type) { return '<div><label class="f" for="set_' + k + '">' + label + '</label><input class="inp" id="set_' + k + '" value="' + esc(s[k]) + '"' + (type ? ' type="number" min="0" step="any"' : '') + '></div>'; };
     var WL = ['', 'التنبيه: غياب بدون عذر (%)', 'الإنذار النهائي: غياب بدون عذر (%) — تجاوزه رسوب', 'الحد الأقصى مع العذر المشروع: غياب + مجاز (%) — تجاوزه رسوب'];
-    frame('<form id="setForm"><div class="card"><h3>الإنذارات (دليل الطالب لمسار بولونيا)</h3><div class="muted" style="font-size:14px">' +
+    frame('<form id="setForm"><div class="card"><h3>الإنذارات (دليل الطالب لمسار بولونيا)</h3><div class="muted" style="font-size:13.5px">' +
       'النسبة من الساعات الكلية للمادة (الساعات الأسبوعية × 15 أسبوعاً). 7% تعادل ساعات المادة في أسبوع واحد، و14% أسبوعين، و21% ثلاثة أسابيع. ' +
       'الإجازة (المجاز) لا تدخل في نسبتي التنبيه والإنذار، لكنها تُحسب ضمن حد الـ21%.</div>' +
       [1, 2, 3].map(function (i) { return '<div class="row">' + inp('warn' + i + '_pct', WL[i], 1) + inp('warn' + i + '_label', 'التسمية') + '</div>'; }).join('') + '</div>' +
@@ -553,7 +553,7 @@
       extra = '<label class="f" for="imMode">طريقة الرفع</label><select class="inp" id="imMode"><option value="merge">' +
               (ent === 'students' ? 'إضافة الجدد وتحديث الموجودين' : 'إضافة الاختيارات الجديدة فقط') + '</option><option value="replace">' + REPLACE[ent] + '</option></select>';
     }
-    A.modal('<h3>' + spec.title + (ent === 'instructors' ? '' : ' - ' + esc(deptName(M.dept))) + '</h3><div class="muted" style="font-size:14px;margin-bottom:6px">الأعمدة في الصف الأول: ' +
+    A.modal('<h3>' + spec.title + (ent === 'instructors' ? '' : ' - ' + esc(deptName(M.dept))) + '</h3><div class="muted" style="font-size:13.5px;margin-bottom:6px">الأعمدة في الصف الأول: ' +
       spec.cols.map(function (c) { return '<span class="chip' + (spec.req.indexOf(c[0]) < 0 ? ' ghost' : '') + '">' + c[1] + (spec.req.indexOf(c[0]) < 0 ? ' (اختياري)' : '') + '</span>'; }).join(' ') + '</div>' +
       (ent === 'instructors' ? '<div class="note">إذا تُركت كلمة المرور فارغة يولّد النظام كلمة لكل تدريسي ويعرضها لك مرة واحدة.</div>' : '') +
       (ent === 'enrollment' ? '<div class="note">كل سطر = طالب واحد + مادة واحدة اختارها. الطالب الذي اختار 6 مواد يُكتب في 6 أسطر. ' +

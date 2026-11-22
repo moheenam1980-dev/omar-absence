@@ -316,7 +316,7 @@
     if (!t) return go('#/home');
     var n = roster(t).length, defH = num(S.boot.settings.default_hours) || 2, opts = '';
     for (var i = 1; i <= 6; i++) opts += '<option' + (i === defH ? ' selected' : '') + '>' + i + '</option>';
-    var h = title('محاضرة جديدة', '#/home') + '<div class="card"><h3>' + esc(t.name) + '</h3><div class="muted" style="font-size:14px">' + esc(tLabel(t)) + '</div>';
+    var h = title('محاضرة جديدة', '#/home') + '<div class="card"><h3>' + esc(t.name) + '</h3><div class="muted" style="font-size:13.5px">' + esc(tLabel(t)) + '</div>';
     if (!n) {
       h += '</div><div class="note bad">لا يوجد طلبة اختاروا هذه المادة بعد. راجع مقرر القسم لتسجيل اختيار الطلبة للمواد.</div>';
       return mount(h, 'home');
@@ -325,7 +325,7 @@
          '<label class="f" for="tkDate">التاريخ</label>' + dateField('tkDate', today()) +
          '<div class="row"><div><label class="f" for="tkTime">وقت المحاضرة</label>' + timeField('tkTime', nowTime()) + '</div>' +
          '<div><label class="f" for="tkHours">عدد الساعات</label><select class="inp" id="tkHours">' + opts + '</select></div></div>' +
-         '<div class="muted" style="margin-top:10px;font-size:14px">عدد الطلبة المسجلين في المادة: ' + n +
+         '<div class="muted" style="margin-top:10px;font-size:13.5px">عدد الطلبة المسجلين في المادة: ' + n +
          '<br>الطالب الذي لم يختر هذه المادة لا يظهر في القائمة ولا يُسجَّل عليه غياب.</div></div>' +
          '<button class="btn ok block" data-act="startTake" data-t="' + esc(tid) + '">' + ICON.camera + 'بدء المسح بالكاميرا</button>';
     mount(h, 'home');
@@ -569,7 +569,7 @@
   function sessCard(s, showIns) {
     return '<div class="card" data-go="#/session/' + esc(s.id) + '" style="cursor:pointer"><div class="wrap" style="justify-content:space-between"><b>' + esc(s.course) + '</b>' +
            '<span class="chip ' + (num(s.absent) ? 'bad' : 'ok') + '">غياب ' + esc(s.absent) + ' / ' + esc(s.total) + '</span></div>' +
-           '<div class="muted" style="font-size:14px;margin-top:4px">' + esc(dayName(s.date)) + ' <span class="num">' + esc(s.date) + '</span>' + (s.time ? ' · ' + esc(fmtTime(s.time)) : '') + ' · ' + esc(s.type) + ' · ' + esc(s.hours) + ' ساعة · المرحلة ' + esc(s.stage) +
+           '<div class="muted" style="font-size:13.5px;margin-top:4px">' + esc(dayName(s.date)) + ' <span class="num">' + esc(s.date) + '</span>' + (s.time ? ' · ' + esc(fmtTime(s.time)) : '') + ' · ' + esc(s.type) + ' · ' + esc(s.hours) + ' ساعة · المرحلة ' + esc(s.stage) +
            (s.study ? ' · ' + esc(s.study) : '') + (showIns ? ' · ' + esc(s.ins) : '') + '</div></div>';
   }
   function viewSessions() {
