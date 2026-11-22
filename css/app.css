@@ -79,7 +79,7 @@ a { color: var(--indigo); }
 svg { flex-shrink: 0; }
 
 /* ---------- شاشة البداية ---------- */
-.boot-splash { position: fixed; inset: 0; background: var(--grad); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 26px; }
+.boot-splash { position: fixed; inset: 0; background: linear-gradient(170deg, #1b2550 0%, #18214a 60%, #141b3d 100%); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 26px; }
 .boot-splash img { border-radius: 50%; background: #fff; box-shadow: 0 0 0 8px rgba(255, 255, 255, .1), 0 20px 50px -10px rgba(0, 0, 0, .5); animation: pop .5s var(--ease); }
 .spinner { width: 28px; height: 28px; border-radius: 50%; border: 2.5px solid rgba(255, 255, 255, .22); border-top-color: #fff; animation: spin .75s linear infinite; }
 .spinner.dark { border-color: var(--line); border-top-color: var(--primary); margin: 40px auto; }
