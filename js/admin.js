@@ -144,7 +144,7 @@
       d.depts.forEach(function (x) { for (var k in t) t[k] += x[k]; });
       frame('<div class="stats"><div class="stat"><b>' + t.students + '</b><span>الطلبة</span></div><div class="stat"><b>' + t.instructors + '</b><span>التدريسيون</span></div>' +
         '<div class="stat"><b>' + t.courses + '</b><span>المواد</span></div><div class="stat"><b>' + t.today + '</b><span>محاضرات اليوم</span></div></div>' +
-        '<div class="note">السنة الدراسية الحالية: <b>' + esc(d.year) + '</b> · مجموع المحاضرات المسجلة: <b>' + t.sessions + '</b> · مجموع الغيابات: <b>' + t.absences + '</b></div>' +
+        '<div class="note">السنة الدراسية الحالية: <b class="num">' + esc(d.year) + '</b> · مجموع المحاضرات المسجلة: <b>' + t.sessions + '</b> · مجموع الغيابات: <b>' + t.absences + '</b></div>' +
         table(['القسم', 'الطلبة', 'التدريسيون', 'المواد', 'المحاضرات', 'اليوم', 'الغيابات'], d.depts.map(function (x) {
           return '<tr><td class="w">' + esc(x.name) + '</td><td>' + x.students + '</td><td>' + x.instructors + '</td><td>' + x.courses + '</td><td>' + x.sessions + '</td><td>' + x.today + '</td><td>' + x.absences + '</td></tr>';
         })));

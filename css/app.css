@@ -98,7 +98,7 @@ svg { flex-shrink: 0; }
 .login-card .sub { color: var(--muted); font-size: 14.5px; margin: 4px 0 22px; }
 .login-card form { text-align: right; }
 .login-card label.f { color: var(--ink-2); font-weight: 500; }
-.credit { margin-top: 22px; font-family: 'Times New Roman', Times, serif; font-size: 15px; font-weight: 700; letter-spacing: .6px; color: var(--navy-dark); direction: ltr; }
+.credit { margin-top: 22px; font-family: 'Tajawal', sans-serif; font-size: 15px; font-weight: 700; letter-spacing: .4px; color: var(--navy-dark); direction: ltr; }
 .credit .ver { display: block; margin-top: 2px; font-family: 'Tajawal', sans-serif; font-size: 11.5px; font-weight: 400; letter-spacing: 0; color: var(--muted); }
 
 /* ---------- الهيكل ---------- */

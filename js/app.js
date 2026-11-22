@@ -223,7 +223,7 @@
   }
   function paintTop() {
     if (!$('#topSub') || !S.boot) return;
-    $('#topSub').textContent = S.boot.settings.college_name + ' · ' + S.boot.year.name;
+    $('#topSub').innerHTML = esc(S.boot.settings.college_name) + ' · <span class="num">' + esc(S.boot.year.name) + '</span>';   // السنة داخل num حتى لا تنقلب (2027-2026)
     var n = $('#net'), off = !navigator.onLine;
     n.className = 'net' + (off ? ' off' : (S.queue.length ? '' : ' hide'));
     n.textContent = off ? 'غير متصل' : (S.queue.length ? 'بانتظار الإرسال: ' + S.queue.length : '');
@@ -279,7 +279,7 @@
       if (!ok) hidden++;
       return ok;
     });
-    var h = '<div class="card hello"><h2>مرحباً، ' + esc(b.user.name) + '</h2><div class="muted">السنة الدراسية ' + esc(b.year.name) +
+    var h = '<div class="card hello"><h2>مرحباً، ' + esc(b.user.name) + '</h2><div class="muted">السنة الدراسية <span class="num">' + esc(b.year.name) + '</span>' +
             ' · الفصل ' + esc(cur) + '</div></div>';
     if (S.draft && teach(S.draft.t_id)) {
       var dt = teach(S.draft.t_id);
