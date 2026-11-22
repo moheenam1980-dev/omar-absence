@@ -11,21 +11,22 @@
   var STALE = { stale: true };
   var TABS = [['dash', 'المتابعة'], ['students', 'الطلبة'], ['courses', 'المواد'], ['enrollment', 'اختيار المواد'], ['teaching', 'الإسناد'], ['cards', 'الهويات'],
               ['reports', 'التقارير'], ['sessions', 'المحاضرات'], ['instructors', 'التدريسيون', 1], ['departments', 'الأقسام', 1], ['years', 'السنوات', 1], ['settings', 'الإعدادات', 1]];
-  // أيقونة ولون كل بطاقة في قائمة الإدارة (تصميم فقط)
+  // أيقونة ولون كل بطاقة في قائمة الإدارة (تصميم فقط): لونان فقط،
+  // الأزرق لإدارة البيانات، والفيروزي للمتابعة والتقارير والمحاضرات
   var TI = function (p) { return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + p + '</svg>'; };
   var TICON = {
-    dash: ['#4f46e5', TI('<path d="M3 12h4l3 8 4-16 3 8h4"/>')],
-    students: ['#0d9488', TI('<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>')],
-    courses: ['#7c3aed', TI('<path d="M2 4h6a4 4 0 0 1 4 4v13a3 3 0 0 0-3-3H2z"/><path d="M22 4h-6a4 4 0 0 0-4 4v13a3 3 0 0 1 3-3h7z"/>')],
-    enrollment: ['#0284c7', TI('<path d="m3 7 2 2 4-4M3 17l2 2 4-4M13 6h8M13 12h8M13 18h8"/>')],
-    teaching: ['#d97706', TI('<path d="M2 3h20M21 3v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V3M7 21l5-5 5 5"/>')],
-    cards: ['#e11d48', TI('<rect x="2" y="5" width="20" height="14" rx="2.5"/><circle cx="8" cy="11.5" r="2.2"/><path d="M4.8 16c.6-1.3 1.8-2 3.2-2s2.6.7 3.2 2M14 10h5M14 14h4"/>')],
-    reports: ['#059669', TI('<path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M8 17v-5M13 17V8M18 17v-3"/>')],
-    sessions: ['#ea580c', TI('<path d="M21 10V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h6M16 2v4M8 2v4M3 10h18"/><circle cx="17.5" cy="17.5" r="4.5"/><path d="M17.5 15.5v2l1.3 1"/>')],
-    instructors: ['#2563eb', TI('<path d="M22 10 12 5 2 10l10 5 10-5z"/><path d="M6 12v5c3 2 9 2 12 0v-5M22 10v6"/>')],
-    departments: ['#475569', TI('<rect x="4" y="2" width="16" height="20" rx="2"/><path d="M9 22v-4h6v4M8 6h.01M12 6h.01M16 6h.01M8 10h.01M12 10h.01M16 10h.01M8 14h.01M12 14h.01M16 14h.01"/>')],
-    years: ['#c026d3', TI('<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/>')],
-    settings: ['#64748b', TI('<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>')]
+    dash: ['var(--tile-follow)', TI('<path d="M3 12h4l3 8 4-16 3 8h4"/>')],
+    students: ['var(--tile-data)', TI('<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>')],
+    courses: ['var(--tile-data)', TI('<path d="M2 4h6a4 4 0 0 1 4 4v13a3 3 0 0 0-3-3H2z"/><path d="M22 4h-6a4 4 0 0 0-4 4v13a3 3 0 0 1 3-3h7z"/>')],
+    enrollment: ['var(--tile-data)', TI('<path d="m3 7 2 2 4-4M3 17l2 2 4-4M13 6h8M13 12h8M13 18h8"/>')],
+    teaching: ['var(--tile-data)', TI('<path d="M2 3h20M21 3v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V3M7 21l5-5 5 5"/>')],
+    cards: ['var(--tile-data)', TI('<rect x="2" y="5" width="20" height="14" rx="2.5"/><circle cx="8" cy="11.5" r="2.2"/><path d="M4.8 16c.6-1.3 1.8-2 3.2-2s2.6.7 3.2 2M14 10h5M14 14h4"/>')],
+    reports: ['var(--tile-follow)', TI('<path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M8 17v-5M13 17V8M18 17v-3"/>')],
+    sessions: ['var(--tile-follow)', TI('<path d="M21 10V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h6M16 2v4M8 2v4M3 10h18"/><circle cx="17.5" cy="17.5" r="4.5"/><path d="M17.5 15.5v2l1.3 1"/>')],
+    instructors: ['var(--tile-data)', TI('<path d="M22 10 12 5 2 10l10 5 10-5z"/><path d="M6 12v5c3 2 9 2 12 0v-5M22 10v6"/>')],
+    departments: ['var(--tile-data)', TI('<rect x="4" y="2" width="16" height="20" rx="2"/><path d="M9 22v-4h6v4M8 6h.01M12 6h.01M16 6h.01M8 10h.01M12 10h.01M16 10h.01M8 14h.01M12 14h.01M16 14h.01"/>')],
+    years: ['var(--tile-data)', TI('<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/>')],
+    settings: ['var(--tile-data)', TI('<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>')]
   };
   // تبويبات لا تحتاج اختيار قسم (التدريسيون يُعرضون لكل الأقسام)
   var NO_DEPT = { dash: 1, instructors: 1, departments: 1, years: 1, settings: 1 };
@@ -71,7 +72,7 @@
     var h = A.title('لوحة الإدارة');
     // القائمة: بطاقات بأيقونات كبيرة وتحت كل أيقونة اسمها. في «المتابعة» شبكة كاملة، وفي باقي الصفحات شريط أفقي مختصر
     h += '<nav class="tabs tiles' + (M.tab === 'dash' ? '' : ' strip') + '" aria-label="قائمة الإدارة">' + TABS.filter(function (t) { return !t[2] || isAdmin(); }).map(function (t) {
-      var ic = TICON[t[0]] || ['#4f46e5', ''];
+      var ic = TICON[t[0]] || ['var(--tile-data)', ''];
       return '<a href="#/admin/' + t[0] + '" class="' + (t[0] === M.tab ? 'on' : '') + '" style="--c:' + ic[0] + '"' + (t[0] === M.tab ? ' aria-current="page"' : '') + '>' +
              '<span class="ti">' + ic[1] + '</span><span class="tl">' + t[1] + '</span></a>';
     }).join('') + '</nav>';

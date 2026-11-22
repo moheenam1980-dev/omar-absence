@@ -28,6 +28,8 @@
   --glass: rgba(255, 255, 255, .78);
   /* سلّم أحجام الخط: ستة أحجام فقط + حجم النص الأساسي */
   --fs-xs: 12px; --fs-sm: 13.5px; --fs-md: 15px; --fs-base: 16px; --fs-lg: 17px; --fs-xl: 21px; --fs-2xl: 28px;
+  /* لونا قائمة الإدارة */
+  --tile-data: #3d5296; --tile-follow: #2b8ea1;
   /* الشكل */
   --radius: 18px; --radius-sm: 12px;
   --shadow: 0 1px 2px rgba(16, 20, 48, .04), 0 4px 16px -8px rgba(16, 20, 48, .10);
@@ -56,6 +58,7 @@
     --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 6px 18px -10px rgba(0, 0, 0, .5);
     --shadow-lg: 0 24px 60px -20px rgba(0, 0, 0, .7);
     --ring: 0 0 0 4px rgba(124, 145, 214, .3);
+    --tile-data: #5d75c3; --tile-follow: #2f8fa0;
   }
 }
 
@@ -339,6 +342,7 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: var(--fs-md); }
 .tabs.tiles .ti { width: 50px; height: 50px; border-radius: 15px; display: inline-flex; align-items: center; justify-content: center;
   color: var(--c); background: color-mix(in srgb, var(--c) 12%, transparent); transition: background-color .18s, color .18s; }
 .tabs.tiles .ti svg { width: 26px; height: 26px; }
+@media (prefers-color-scheme: dark) { .tabs.tiles a:not(.on) .ti { color: color-mix(in srgb, var(--c) 55%, #fff); } }
 .tabs.tiles .tl { display: block; max-width: 100%; }
 @media (hover: hover) { .tabs.tiles a:hover { transform: translateY(-3px); border-color: color-mix(in srgb, var(--c) 35%, var(--line)); box-shadow: var(--shadow), 0 14px 28px -18px var(--c); } }
 .tabs.tiles a:active { transform: scale(.96); }
