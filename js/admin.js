@@ -416,7 +416,7 @@
     win.document.open();
     win.document.write('<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><title>طباعة هويات الطلبة</title><base href="' + base + '"><link rel="stylesheet" href="css/cards.css">' +
       '<style>body{margin:0;background:#e9ebf5;padding:20px 0;font-family:Tajawal,sans-serif}.print-bar{position:sticky;top:0;z-index:10;text-align:center;padding:10px;margin-bottom:16px}' +
-      '.print-bar button{font:inherit;font-size:15px;color:#fff;border:0;padding:11px 30px;border-radius:12px;cursor:pointer;background:linear-gradient(135deg,#22267e,#4433b5 60%,#0b8e9e)}' +
+      '.print-bar button{font:inherit;font-size:15px;color:#fff;border:0;padding:11px 30px;border-radius:12px;cursor:pointer;background:linear-gradient(135deg,#1b2550,#3d5296 60%,#2b8ea1)}' +
       '@page{size:A4 portrait;margin:0}@media print{body{background:none;padding:0}.print-bar{display:none!important}.a4-page{margin:0!important;box-shadow:none!important;border-radius:0!important}}</style></head><body>' +
       '<div class="print-bar"><button onclick="window.print()">طباعة / حفظ كـ PDF</button></div><div id="pagesContainer">' + clone.innerHTML + '</div>' +
       '<script>window.addEventListener("load",function(){(document.fonts?document.fonts.ready:Promise.resolve()).then(function(){setTimeout(function(){window.focus();window.print()},400)})})<\/script></body></html>');
