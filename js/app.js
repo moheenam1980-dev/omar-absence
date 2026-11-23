@@ -697,18 +697,38 @@
     mount(title('حسابي') + '<div class="card acct"><div class="acct-head"><div class="grow"><h3>' + esc(u.name) + '</h3><div class="wrap" style="margin-top:6px"><span class="chip">' + esc(ROLE[u.role] || u.role) + '</span>' +
       '<span class="chip teal">' + esc(u.dept_id ? (S.deptName[u.dept_id] || '') : 'كل الأقسام') + '</span><span class="chip num">' + esc(u.username) + '</span></div></div></div>' +
       '<button class="btn logout block" data-act="logout">' + ICON.logout + 'تسجيل الخروج</button></div>' +
-      '<div class="card"><h3>تغيير كلمة المرور</h3><form id="pwForm"><label class="f" for="pw0">كلمة المرور الحالية</label><input class="inp" type="password" id="pw0" dir="ltr" autocomplete="current-password" required>' +
+      // تغيير كلمة المرور مطويّ: يظهر النموذج فقط عند الضغط على «تغيير كلمة المرور»،
+      // وزر الحفظ معطّل حتى تُملأ الحقول بشكل صحيح (تصميم فقط، نفس طلب changePassword)
+      '<div class="card pw-card"><div class="pw-head"><div class="grow"><h3>كلمة المرور</h3><div class="muted pw-sub">غيّرها إذا شاركتها مع أحد أو أردت كلمة أسهل عليك</div></div>' +
+      '<button type="button" class="btn sm ghost" id="pwOpen">تغيير كلمة المرور</button></div>' +
+      '<form id="pwForm" class="hide"><label class="f" for="pw0">كلمة المرور الحالية</label><input class="inp" type="password" id="pw0" dir="ltr" autocomplete="current-password" required>' +
       '<label class="f" for="pw1">كلمة المرور الجديدة (6 أحرف على الأقل)</label><input class="inp" type="password" id="pw1" dir="ltr" autocomplete="new-password" minlength="6" required>' +
       '<label class="f" for="pw2">تأكيد كلمة المرور الجديدة</label><input class="inp" type="password" id="pw2" dir="ltr" autocomplete="new-password" required>' +
-      '<button class="btn block" style="margin-top:14px">حفظ كلمة المرور</button></form></div>' +
+      '<div class="pw-hint muted" id="pwHint" aria-live="polite"></div>' +
+      '<div class="row" style="margin-top:12px"><button class="btn ok" id="pwSave" disabled>حفظ كلمة المرور</button><button type="button" class="btn ghost" id="pwCancel">إلغاء</button></div></form></div>' +
       '<div class="credit" style="text-align:center">Designed by OMAR INAAM<span class="ver">v' + esc(S.boot.version) + '</span></div>', 'account');
-    $('#pwForm').onsubmit = function (ev) {
+    var f = $('#pwForm'), open = function (on) {
+      f.classList.toggle('hide', !on); $('#pwOpen').classList.toggle('hide', on);
+      if (on) $('#pw0').focus(); else { f.reset(); check(); }
+    };
+    var check = function () {
+      var a = $('#pw0').value, b = $('#pw1').value, c = $('#pw2').value, msg = '';
+      if (b && b.length < 6) msg = 'كلمة المرور الجديدة أقل من 6 أحرف';
+      else if (c && b !== c) msg = 'كلمتا المرور غير متطابقتين';
+      $('#pwHint').textContent = msg;
+      $('#pwSave').disabled = !(a && b.length >= 6 && b === c);
+    };
+    $('#pwOpen').onclick = function () { open(true); };
+    $('#pwCancel').onclick = function () { open(false); };
+    f.oninput = check;
+    f.onsubmit = function (ev) {
       ev.preventDefault();
       if ($('#pw1').value !== $('#pw2').value) return toast('كلمتا المرور غير متطابقتين', 'bad');
+      var b = $('#pwSave'); b.disabled = true;
       api('changePassword', { old: $('#pw0').value, password: $('#pw1').value }).then(function (d) {
         S.token = d.token; store.set('token', d.token);
-        toast('تم تغيير كلمة المرور', 'ok'); ev.target.reset();
-      }).catch(fail);
+        toast('تم تغيير كلمة المرور', 'ok'); open(false);
+      }).catch(function (e) { check(); fail(e); });
     };
   }
 
