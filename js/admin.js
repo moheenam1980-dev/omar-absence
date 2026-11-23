@@ -7,7 +7,8 @@
   var isAdmin = function () { return S.boot.user.role === 'admin'; };
   var STUDIES = ['صباحي', 'مسائي'], SEMS = ['الأول', 'الثاني', 'سنوي'];
   // القسم لا يُختار تلقائياً: تبدأ القائمة بـ«اختر القسم» حتى يختار المدير بنفسه
-  var M = { meta: null, dept: '', data: {}, tab: 'dash', seq: 0, f: { q: '', course: '', limit: 150 } };
+  // القسم يُختار من «المتابعة» ويُحفظ في الجهاز، وكل صفحات القسم تعمل عليه
+  var M = { meta: null, dept: A.store.get('adminDept', ''), data: {}, tab: 'dash', seq: 0, f: { q: '', course: '', limit: 150 } };
   var STALE = { stale: true };
   var TABS = [['dash', 'المتابعة'], ['students', 'الطلبة'], ['courses', 'المواد'], ['enrollment', 'اختيار المواد'], ['teaching', 'الإسناد'], ['cards', 'الهويات'],
               ['reports', 'التقارير'], ['sessions', 'المحاضرات'], ['instructors', 'التدريسيون', 1], ['departments', 'الأقسام', 1], ['years', 'السنوات', 1], ['settings', 'الإعدادات', 1]];
@@ -46,7 +47,7 @@
     return api('list', { entities: ['departments', 'years', 'instructors'] }).then(function (d) {
       M.meta = d;
       if (!isAdmin()) M.dept = S.boot.user.dept_id;
-      else if (M.dept && !deptName(M.dept)) M.dept = '';
+      else if (M.dept && !deptName(M.dept)) { M.dept = ''; A.store.set('adminDept', ''); }
     });
   }
   /** يتجاهل نتيجة طلب وصلت بعد أن انتقل المستخدم إلى تبويب أو قسم آخر
@@ -68,25 +69,55 @@
   }
 
   /* ---------- الإطار والتبويبات ---------- */
-  function frame(body) {
-    var h = A.title('لوحة الإدارة');
-    // القائمة: بطاقات بأيقونات كبيرة وتحت كل أيقونة اسمها. في «المتابعة» شبكة كاملة، وفي باقي الصفحات شريط أفقي مختصر
-    h += '<nav class="tabs tiles' + (M.tab === 'dash' ? '' : ' strip') + '" aria-label="قائمة الإدارة">' + TABS.filter(function (t) { return !t[2] || isAdmin(); }).map(function (t) {
-      var ic = TICON[t[0]] || ['var(--tile-data)', ''];
-      return '<a href="#/admin/' + t[0] + '" class="' + (t[0] === M.tab ? 'on' : '') + '" style="--c:' + ic[0] + '"' + (t[0] === M.tab ? ' aria-current="page"' : '') + '>' +
-             '<span class="ti">' + ic[1] + '</span><span class="tl">' + t[1] + '</span></a>';
-    }).join('') + '</nav>';
-    if (!NO_DEPT[M.tab]) {
-      h += isAdmin() ? '<div class="toolbar"><label class="muted" for="adDept">القسم:</label><select class="inp" id="adDept" style="max-width:340px">' +
-                       opt(M.meta.departments.map(function (d) { return [d.dept_id, d.dept_name]; }), M.dept, 'اختر القسم') + '</select></div>'
-                     : '<div class="note">القسم: <b>' + esc(deptName(M.dept)) + '</b></div>';
+  /** هل الصفحة متاحة الآن؟ صفحات القسم تحتاج اختيار القسم أولاً من «المتابعة» */
+  function needsDept(tab) { return !NO_DEPT[tab]; }
+  function locked(tab) { return needsDept(tab) && !M.dept; }
+  function visibleTabs() { return TABS.filter(function (t) { return !t[2] || isAdmin(); }); }
+  function tabLink(t, cls) {
+    var ic = TICON[t[0]] || ['var(--tile-data)', ''], on = t[0] === M.tab, off = locked(t[0]);
+    return '<a href="#/admin' + (t[0] === 'dash' ? '' : '/' + t[0]) + '" class="' + cls + (on ? ' on' : '') + (off ? ' off' : '') + '" style="--c:' + ic[0] + '"' +
+           (on ? ' aria-current="page"' : '') + (off ? ' aria-disabled="true" data-locked="1" title="اختر القسم من «المتابعة» أولاً"' : '') + '>' +
+           (cls ? ic[1] : '<span class="ti">' + ic[1] + '</span>') + '<span class="tl">' + t[1] + '</span></a>';
+  }
+  /** القائمة الجانبية (حاسوب): صفحات الإدارة تحت «الإدارة» مباشرة، ثم «حسابي» في الأخير */
+  function paintSubnav() {
+    var nav = $('#nav'), adm = nav && nav.querySelector('a[href="#/admin"]');
+    if (!adm) return;
+    adm.classList.add('has-sub');
+    var tabs = visibleTabs(), g = function (keys) { return tabs.filter(function (t) { return keys.indexOf(t[0]) >= 0; }).map(function (t) { return tabLink(t, 'sub'); }).join(''); };
+    var dn = M.dept ? deptName(M.dept) : '';
+    var h = '<div class="subnav">' + g(['dash']) +
+            '<div class="grp' + (dn ? '' : ' warn') + '">' + (dn ? 'القسم: ' + esc(dn) : 'اختر القسم من «المتابعة»') + '</div>' +
+            g(['students', 'courses', 'enrollment', 'teaching', 'cards', 'reports', 'sessions']);
+    if (isAdmin()) h += '<div class="grp">عام لكل الأقسام</div>' + g(['instructors', 'departments', 'years', 'settings']);
+    adm.insertAdjacentHTML('afterend', h + '</div>');
+  }
+  var TAB_TITLE = { dash: 'لوحة الإدارة' };
+  /** top: محتوى يظهر قبل البطاقات (اختيار القسم في «المتابعة» حتى يكون أول ما يُرى على الهاتف) */
+  function frame(body, top) {
+    var def = TABS.filter(function (t) { return t[0] === M.tab; })[0];
+    var h = A.title(TAB_TITLE[M.tab] || (def ? def[1] : 'لوحة الإدارة')) + (top || '');
+    // على الهاتف: البطاقات بأيقونات كبيرة (في «المتابعة» شبكة كاملة، وفي باقي الصفحات شريط أفقي). على الحاسوب تحل محلها القائمة الجانبية
+    h += '<nav class="tabs tiles admin-tiles' + (M.tab === 'dash' ? '' : ' strip') + '" aria-label="قائمة الإدارة">' +
+         visibleTabs().map(function (t) { return tabLink(t, ''); }).join('') + '</nav>';
+    if (needsDept(M.tab)) {
+      h += '<div class="dept-bar"><span class="muted">القسم:</span> <b>' + esc(deptName(M.dept)) + '</b>' +
+           (isAdmin() ? '<a href="#/admin" class="dept-change">تغيير القسم</a>' : '') + '</div>';
     }
     A.mount(h + body, 'admin', true);
-    var sel = $('#adDept');
-    if (sel) sel.onchange = function () { M.dept = this.value; render([M.tab]); };
-    var on = $('.tabs a.on');
-    if (on && on.scrollIntoView) on.scrollIntoView({ inline: 'center', block: 'nearest' });
+    paintSubnav();
+    var on = $('.admin-tiles a.on');
+    if (on && on.scrollIntoView && window.innerWidth < 900) on.scrollIntoView({ inline: 'center', block: 'nearest' });
   }
+  // صفحة مقفلة (لم يُختر القسم): تنبيه بدل الانتقال
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('a[data-locked]');
+    if (!a) return;
+    e.preventDefault();
+    toast('اختر القسم من «المتابعة» أولاً', 'info');
+    if (M.tab !== 'dash') A.go('#/admin');
+    else { var s = $('#dashDept'); if (s) s.focus(); }
+  });
   function render(parts) {
     var tab = parts[0] || 'dash', def = TABS.filter(function (t) { return t[0] === tab; })[0];
     if (!def || (def[2] && !isAdmin())) tab = 'dash';
@@ -94,9 +125,7 @@
     var seq = ++M.seq;
     loadMeta().then(function () {
       if (seq !== M.seq) return;
-      if (!NO_DEPT[tab] && !M.dept) {
-        return frame('<div class="card empty"><b>اختر القسم أولاً</b>اختر القسم من القائمة أعلاه لعرض بياناته.</div>');
-      }
+      if (locked(tab)) { toast('اختر القسم من «المتابعة» أولاً', 'info'); return A.go('#/admin'); }
       frame(A.loading);
       return VIEW[tab]();
     }).catch(function (e) { if (e === STALE || seq !== M.seq) return; if (M.meta) frame('<div class="note bad">' + esc(e.message) + '</div>'); else A.mount('<div class="note bad">' + esc(e.message) + '</div>', 'admin'); });
@@ -143,12 +172,20 @@
     return live(api('stats')).then(function (d) {
       var t = { students: 0, courses: 0, instructors: 0, sessions: 0, today: 0, absences: 0 };
       d.depts.forEach(function (x) { for (var k in t) t[k] += x[k]; });
+      // اختيار القسم يبدأ من هنا: صفحات القسم تبقى مقفلة حتى يُختار
+      var pick = isAdmin()
+        ? '<div class="card dept-pick' + (M.dept ? '' : ' need') + '"><div class="grow"><h3>القسم الذي تعمل عليه</h3><div class="muted">الطلبة والمواد واختيار المواد والإسناد والهويات والتقارير والمحاضرات تعمل على هذا القسم' +
+          (M.dept ? '.' : '. اختره لتفعيلها.') + '</div></div><select class="inp" id="dashDept" aria-label="القسم">' +
+          opt(M.meta.departments.filter(function (x) { return x.active !== 'لا'; }).map(function (x) { return [x.dept_id, x.dept_name]; }), M.dept, 'اختر القسم') + '</select></div>'
+        : '<div class="card dept-pick"><div class="grow"><h3>قسمك: ' + esc(deptName(M.dept)) + '</h3><div class="muted">كل صفحات الإدارة تعمل على قسمك.</div></div></div>';
       frame('<div class="stats"><div class="stat"><b>' + t.students + '</b><span>الطلبة</span></div><div class="stat"><b>' + t.instructors + '</b><span>التدريسيون</span></div>' +
         '<div class="stat"><b>' + t.courses + '</b><span>المواد</span></div><div class="stat"><b>' + t.today + '</b><span>محاضرات اليوم</span></div></div>' +
         '<div class="note">السنة الدراسية الحالية: <b class="num">' + esc(d.year) + '</b> · مجموع المحاضرات المسجلة: <b>' + t.sessions + '</b> · مجموع الغيابات: <b>' + t.absences + '</b></div>' +
         table(['القسم', 'الطلبة', 'التدريسيون', 'المواد', 'المحاضرات', 'اليوم', 'الغيابات'], d.depts.map(function (x) {
-          return '<tr><td class="w">' + esc(x.name) + '</td><td>' + x.students + '</td><td>' + x.instructors + '</td><td>' + x.courses + '</td><td>' + x.sessions + '</td><td>' + x.today + '</td><td>' + x.absences + '</td></tr>';
-        })));
+          return '<tr' + (x.id === M.dept ? ' class="sel"' : '') + '><td class="w">' + esc(x.name) + '</td><td>' + x.students + '</td><td>' + x.instructors + '</td><td>' + x.courses + '</td><td>' + x.sessions + '</td><td>' + x.today + '</td><td>' + x.absences + '</td></tr>';
+        })), pick);
+      var sel = $('#dashDept');
+      if (sel) sel.onchange = function () { M.dept = this.value; A.store.set('adminDept', M.dept); render(['dash']); if (M.dept) toast('القسم: ' + deptName(M.dept), 'ok', 2000); };
     });
   };
 

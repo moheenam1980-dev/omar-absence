@@ -356,6 +356,34 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: var(--fs-md); }
 .tabs.tiles a:active { transform: scale(.96); }
 .tabs.tiles a.on { border-color: var(--c); background: color-mix(in srgb, var(--c) 7%, var(--card)); color: var(--ink); font-weight: 700; box-shadow: 0 0 0 1px var(--c), var(--shadow); }
 .tabs.tiles a.on .ti { background: var(--c); color: #fff; }
+/* الإدارة: اختيار القسم في «المتابعة»، وشريط القسم في صفحاته، والصفحات المقفلة */
+.dept-pick { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.dept-pick .grow { flex: 1 1 260px; min-width: 0; }
+.dept-pick .muted { font-size: var(--fs-sm); margin-top: 2px; }
+.dept-pick select { flex: 0 1 320px; }
+.dept-pick.need { border-color: color-mix(in srgb, var(--gold) 60%, var(--line)); box-shadow: 0 0 0 3px var(--gold-soft), var(--shadow); }
+.dept-bar { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin: 0 2px 14px; font-size: var(--fs-md); }
+.dept-bar b { color: var(--navy-dark); }
+.dept-bar .dept-change { margin-inline-start: auto; font-size: var(--fs-sm); font-weight: 500; text-decoration: none; }
+.dept-bar .dept-change:hover { text-decoration: underline; }
+.tbl tr.sel td { background: var(--soft); font-weight: 500; }
+.tabs.tiles a.off { opacity: .45; filter: grayscale(.6); box-shadow: none; cursor: not-allowed; }
+@media (hover: hover) { .tabs.tiles a.off:hover { transform: none; border-color: var(--line); box-shadow: none; } }
+/* القائمة الجانبية للإدارة (حاسوب فقط) */
+.subnav { display: none; }
+@media (min-width: 900px) {
+  .admin-tiles { display: none !important; }
+  .nav { overflow-y: auto; }
+  .nav a.has-sub.on { background: none; color: var(--navy-dark); font-weight: 700; }
+  .subnav { display: flex; flex-direction: column; gap: 1px; margin: 2px 0 10px; margin-inline-start: 22px; padding-inline-start: 10px; border-inline-start: 2px solid var(--line); }
+  .subnav .grp { font-size: var(--fs-xs); font-weight: 500; color: var(--muted); padding: 12px 10px 3px; line-height: 1.4; }
+  .subnav .grp.warn { color: var(--warn-ink); }
+  .nav .subnav a { min-height: 38px; padding: 6px 10px; gap: 10px; font-size: var(--fs-sm); border-radius: 10px; }
+  .nav .subnav a svg { width: 18px; height: 18px; color: var(--c); }
+  .nav .subnav a.on { background: color-mix(in srgb, var(--c) 12%, transparent); color: var(--ink); font-weight: 700; }
+  .nav .subnav a.off { opacity: .42; cursor: not-allowed; }
+  .nav .subnav a.off:hover { background: none; }
+}
 /* داخل الصفحات الفرعية: نفس البطاقات في شريط أفقي يُسحب جانبياً حتى لا تدفع المحتوى للأسفل */
 .tabs.tiles.strip { display: flex; overflow-x: auto; gap: 8px; padding: 4px 2px 14px; scroll-snap-type: x proximity; }
 .tabs.tiles.strip a { flex: 0 0 84px; min-height: 86px; padding: 10px 4px 9px; gap: 7px; font-size: var(--fs-xs); border-radius: 16px; scroll-snap-align: start; }
