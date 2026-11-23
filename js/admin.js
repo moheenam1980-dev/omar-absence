@@ -428,9 +428,8 @@
         card.innerHTML = '<div class="card-header"><div class="card-logo"><img src="img/logo.jpg" alt=""></div><div class="card-titles"><div class="uni-title">' + esc(s.university_name) +
           '</div><div class="inst-title">' + esc(s.college_name) + '</div><div class="dept-title">' + esc(dept) + '</div></div></div><div class="card-accent"></div>' +
           '<div class="card-body"><div class="student-name-container"><span class="student-name-text">' + esc(x.st_name) + '</span></div><div class="card-bottom"><div class="meta-details">' +
-          '<div class="meta-badge"><span class="k">رقم الطالب</span><span class="v" dir="ltr">' + esc(x.st_id) + '</span></div>' +
-          '<div class="meta-badge"><span class="k">القسم</span><span class="v" style="font-size:12px;white-space:normal;text-align:center;line-height:1.3">' + esc(deptName(M.dept)) + '</span></div></div><div class="qr-wrapper"><div class="qr-box"></div></div></div></div>' +
-          '<div class="card-footer"><span>هوية تسجيل الحضور</span><span class="brand">' + esc(x.st_id) + '</span></div>';
+          // الهوية: الاسم، ثم القسم ورمز QR فقط (الرقم داخل الرمز ولا يُكتب على البطاقة)
+          '<div class="meta-badge dept"><span class="k">القسم</span><span class="v">' + esc(deptName(M.dept)) + '</span></div></div><div class="qr-wrapper"><div class="qr-box"></div></div></div></div>';
         page.appendChild(card);
         new window.QRCode(card.querySelector('.qr-box'), { text: String(x.st_id).trim(), width: 256, height: 256, colorDark: '#000000', colorLight: '#ffffff', correctLevel: window.QRCode.CorrectLevel.M });
         var t = card.querySelector('.student-name-text'), w = card.querySelector('.student-name-container'), fs = 20;
