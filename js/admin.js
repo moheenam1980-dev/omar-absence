@@ -7,8 +7,9 @@
   var isAdmin = function () { return S.boot.user.role === 'admin'; };
   var STUDIES = ['صباحي', 'مسائي'], SEMS = ['الأول', 'الثاني', 'سنوي'];
   // القسم لا يُختار تلقائياً: تبدأ القائمة بـ«اختر القسم» حتى يختار المدير بنفسه
-  // القسم يُختار من «المتابعة» ويُحفظ في الجهاز، وكل صفحات القسم تعمل عليه
-  var M = { meta: null, dept: A.store.get('adminDept', ''), data: {}, tab: 'dash', seq: 0, f: { q: '', course: '', limit: 150 } };
+  // القسم يُختار من «المتابعة» في كل فتح للنظام (لا يُختار تلقائياً)، ويبقى أثناء التنقل بين صفحات الإدارة
+  A.store.del('adminDept');   // إزالة ما حفظته النسخة 4.7 حتى لا يُختار قسم تلقائياً
+  var M = { meta: null, dept: '', data: {}, tab: 'dash', seq: 0, f: { q: '', course: '', limit: 150 } };
   var STALE = { stale: true };
   var TABS = [['dash', 'المتابعة'], ['students', 'الطلبة'], ['courses', 'المواد'], ['enrollment', 'اختيار المواد'], ['teaching', 'الإسناد'], ['cards', 'الهويات'],
               ['reports', 'التقارير'], ['sessions', 'المحاضرات'], ['instructors', 'التدريسيون', 1], ['departments', 'الأقسام', 1], ['years', 'السنوات', 1], ['settings', 'الإعدادات', 1]];
@@ -47,7 +48,7 @@
     return api('list', { entities: ['departments', 'years', 'instructors'] }).then(function (d) {
       M.meta = d;
       if (!isAdmin()) M.dept = S.boot.user.dept_id;
-      else if (M.dept && !deptName(M.dept)) { M.dept = ''; A.store.set('adminDept', ''); }
+      else if (M.dept && !deptName(M.dept)) M.dept = '';
     });
   }
   /** يتجاهل نتيجة طلب وصلت بعد أن انتقل المستخدم إلى تبويب أو قسم آخر
@@ -119,6 +120,8 @@
     else { var s = $('#dashDept'); if (s) s.focus(); }
   });
   function render(parts) {
+    // دخول جديد (بعد الخروج أو بحساب آخر): يبدأ بلا قسم مختار وبلا بيانات قديمة
+    if (M.who !== S.token) { M.who = S.token; M.dept = ''; M.meta = null; M.data = {}; }
     var tab = parts[0] || 'dash', def = TABS.filter(function (t) { return t[0] === tab; })[0];
     if (!def || (def[2] && !isAdmin())) tab = 'dash';
     M.tab = tab;
@@ -185,7 +188,7 @@
           return '<tr' + (x.id === M.dept ? ' class="sel"' : '') + '><td class="w">' + esc(x.name) + '</td><td>' + x.students + '</td><td>' + x.instructors + '</td><td>' + x.courses + '</td><td>' + x.sessions + '</td><td>' + x.today + '</td><td>' + x.absences + '</td></tr>';
         })), pick);
       var sel = $('#dashDept');
-      if (sel) sel.onchange = function () { M.dept = this.value; A.store.set('adminDept', M.dept); render(['dash']); if (M.dept) toast('القسم: ' + deptName(M.dept), 'ok', 2000); };
+      if (sel) sel.onchange = function () { M.dept = this.value; render(['dash']); if (M.dept) toast('القسم: ' + deptName(M.dept), 'ok', 2000); };
     });
   };
 
