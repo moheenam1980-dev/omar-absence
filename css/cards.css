@@ -223,8 +223,11 @@
   direction: ltr;
 }
 
-/* 4.7: بدون رقم الطالب وبدون التذييل: القسم وحده بجانب رمز QR، والرمز أكبر قليلاً */
-.meta-badge.dept { flex-direction: column; align-items: stretch; gap: 5px; white-space: normal; padding: 8px 10px; }
-.meta-badge.dept .v { font-size: 15px; text-align: center; line-height: 1.35; padding: 4px 10px; border-radius: 10px; }
-.qr-box, .qr-box img, .qr-box canvas { width: 112px !important; height: 112px !important; }
-.card-bottom { margin-top: 10px; }
+/* 4.7: بدون رقم الطالب وبدون التذييل، والقسم في الرأس فقط: رأس أكبر، ثم الاسم، ثم رمز QR في الوسط */
+.card-header { padding: 14px 16px; gap: 14px; }
+.card-logo { width: 70px; height: 70px; }
+.uni-title { font-size: 14px; }
+.inst-title { font-size: 17.5px; white-space: nowrap; }
+.dept-title { font-size: 16.5px; }
+.card-bottom { justify-content: center; margin-top: 10px; }
+.qr-box, .qr-box img, .qr-box canvas { width: 118px !important; height: 118px !important; }

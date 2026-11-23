@@ -427,9 +427,9 @@
         card.className = 'id-card';
         card.innerHTML = '<div class="card-header"><div class="card-logo"><img src="img/logo.jpg" alt=""></div><div class="card-titles"><div class="uni-title">' + esc(s.university_name) +
           '</div><div class="inst-title">' + esc(s.college_name) + '</div><div class="dept-title">' + esc(dept) + '</div></div></div><div class="card-accent"></div>' +
-          '<div class="card-body"><div class="student-name-container"><span class="student-name-text">' + esc(x.st_name) + '</span></div><div class="card-bottom"><div class="meta-details">' +
-          // الهوية: الاسم، ثم القسم ورمز QR فقط (الرقم داخل الرمز ولا يُكتب على البطاقة)
-          '<div class="meta-badge dept"><span class="k">القسم</span><span class="v">' + esc(deptName(M.dept)) + '</span></div></div><div class="qr-wrapper"><div class="qr-box"></div></div></div></div>';
+          '<div class="card-body"><div class="student-name-container"><span class="student-name-text">' + esc(x.st_name) + '</span></div><div class="card-bottom">' +
+          // الهوية: الرأس (الجامعة والكلية والقسم)، ثم الاسم، ثم رمز QR فقط (الرقم داخل الرمز ولا يُكتب على البطاقة)
+          '<div class="qr-wrapper"><div class="qr-box"></div></div></div></div>';
         page.appendChild(card);
         new window.QRCode(card.querySelector('.qr-box'), { text: String(x.st_id).trim(), width: 256, height: 256, colorDark: '#000000', colorLight: '#ffffff', correctLevel: window.QRCode.CorrectLevel.M });
         var t = card.querySelector('.student-name-text'), w = card.querySelector('.student-name-container'), fs = 20;
