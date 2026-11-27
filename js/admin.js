@@ -599,7 +599,23 @@
         { k: 'st_id', label: 'رقم الطالب (هو ما يُطبع في رمز QR)', value: r.st_id, ltr: 1, readonly: !isNew },
         { k: 'st_name', label: 'اسم الطالب', value: r.st_name },
         { k: 'status', label: 'الحالة', type: 'select', options: ['مستمر', 'مؤجل', 'مرقن قيده', 'متخرج'], value: r.status || 'مستمر', hint: 'غير «مستمر» لا يظهر في قوائم الغياب' }
-      ], function (v) { v._id = id || ''; v.dept_id = M.dept; return saveRow('students', v, ['students']); });
+      ], function (v) {
+        // منع إضافة الطالب مرتين: نفس الاسم الرباعي برقم آخر في القسم. الضغطة الثانية «على أي حال» للأسماء المتطابقة فعلاً
+        var d = dupStudent(D, v.st_name, id);
+        if (d && !dupOk) {
+          dupOk = true; $('#adSave').textContent = isNew ? 'إضافة على أي حال' : 'حفظ على أي حال';
+          return Promise.reject(new Error('يوجد طالب بنفس الاسم الرباعي في القسم برقم ' + d.st_id + '. تأكد أنه ليس الطالب نفسه، أو اضغط «' + $('#adSave').textContent + '»'));
+        }
+        v._id = id || ''; v.dept_id = M.dept; return saveRow('students', v, ['students']);
+      });
+      var dupOk = false, nm = $('#ff_st_name');
+      nm.insertAdjacentHTML('afterend', '<div class="dup-hint" id="dupHint" aria-live="polite"></div>');
+      var chk = function () {
+        var d = dupStudent(D, nm.value, id);
+        $('#dupHint').innerHTML = d ? 'يوجد طالب بهذا الاسم في القسم: <b>' + esc(d.st_name) + '</b> برقم <span class="num">' + esc(d.st_id) + '</span>' : '';
+        dupOk = false; $('#adSave').textContent = 'حفظ';
+      };
+      nm.addEventListener('input', chk); chk();
     } else if (ent === 'courses') {
       r = find(D.courses, 'c_id');
       form(isNew ? 'إضافة مادة' : 'تعديل مادة', [
@@ -671,6 +687,12 @@
     instructors: { title: 'رفع قائمة التدريسيين', file: 'قالب التدريسيين', sample: ['د. محمد أحمد', 'm.ahmed', ''],
       cols: [['ins_name', 'الاسم', ['اسم التدريسي', 'name']], ['username', 'اسم المستخدم', ['username', 'المستخدم']], ['password', 'كلمة المرور', ['كلمه المرور', 'password']]], req: ['ins_name', 'username'] }
   };
+  /** طالب في القسم بنفس الاسم الرباعي (تُهمل الهمزات والتشكيل والمسافات الزائدة)، غير الطالب exceptId */
+  function dupStudent(D, name, exceptId) {
+    var k = nrm(name);
+    if (!k) return null;
+    return (D.students || []).filter(function (s) { return s.st_id !== exceptId && nrm(s.st_name) === k; })[0] || null;
+  }
   function cell(v) { return typeof v === 'number' ? (Number.isInteger(v) ? v.toFixed(0) : String(v)) : String(v === undefined || v === null ? '' : v).trim(); }
   function fixStage(v) {
     var st = stages(), x = nrm(v).replace(/^المرحله\s*/, '').replace(/[٠-٩]/g, function (d) { return '٠١٢٣٤٥٦٧٨٩'.indexOf(d); });
@@ -707,6 +729,19 @@
       return rows.map(function (r) { return r || {}; });
     });
   }
+  /** أسطر ملف الطلبة التي اسمها موجود مسبقاً في القسم برقم آخر، أو مكرر داخل الملف برقم آخر */
+  function fileDups(r) {
+    var D = M.data[M.dept] || {}, ex = {}, seen = {}, out = [];
+    (D.students || []).forEach(function (s) { ex[nrm(s.st_name)] = s; });
+    r.forEach(function (x, i) {
+      if (!x.st_name || !x.st_id) return;
+      var k = nrm(x.st_name), e = ex[k];
+      if (e && e.st_id !== x.st_id) out.push({ i: i, name: x.st_name, id: x.st_id, why: 'موجود مسبقاً في القسم برقم ' + e.st_id });
+      else if (seen[k] && seen[k] !== x.st_id) out.push({ i: i, name: x.st_name, id: x.st_id, why: 'مكرر في الملف (رقم ' + seen[k] + ')' });
+      else if (!seen[k]) seen[k] = x.st_id;
+    });
+    return out;
+  }
   function importDialog(ent) {
     var spec = IMP[ent], extra = '';
     var REPLACE = { students: 'استبدال: حذف طلبة القسم غير الموجودين في الملف',
@@ -727,14 +762,18 @@
       '<button class="btn sm soft" data-act="aTemplate" data-e="' + ent + '">تحميل قالب إكسل جاهز</button>' + extra +
       '<label class="f" for="imFile">ملف الإكسل</label><input class="inp" type="file" id="imFile" accept=".xlsx,.xls"><div id="imInfo" style="margin-top:10px"></div>' +
       '<div class="row" style="margin-top:14px"><button class="btn ok" id="imGo" disabled>رفع</button><button class="btn ghost" data-act="closeModal">إغلاق</button></div>');
-    var rows = null;
+    var rows = null, dups = [];
     var read = function () {
       var f = $('#imFile').files[0];
       if (!f) return;
       $('#imGo').disabled = true;
       parseFile(ent, f).then(function (r) {
-        rows = r;
-        $('#imInfo').innerHTML = '<div class="note ok">تمت قراءة الملف: ' + r.length + ' سجل. اضغط «رفع» للحفظ.</div>';
+        rows = r; dups = ent === 'students' ? fileDups(r) : [];
+        $('#imInfo').innerHTML = '<div class="note ok">تمت قراءة الملف: ' + r.length + ' سجل. اضغط «رفع» للحفظ.</div>' + (dups.length
+          ? '<div class="note warn"><b>أسماء مكررة (' + dups.length + '):</b> الطالب نفسه قد يُضاف مرتين برقمين مختلفين.' +
+            '<ul class="dup-list">' + dups.slice(0, 15).map(function (x) { return '<li>سطر ' + (x.i + 2) + ': ' + esc(x.name) + ' <span class="num">(' + esc(x.id) + ')</span> - ' + esc(x.why) + '</li>'; }).join('') +
+            (dups.length > 15 ? '<li>و' + (dups.length - 15) + ' غيرها</li>' : '') + '</ul>' +
+            '<label class="dup-skip"><input type="checkbox" id="imDupSkip" checked> عدم رفع هذه الأسطر (مستحسن)</label></div>' : '');
         $('#imGo').disabled = false;
       }).catch(function (e) { rows = null; $('#imInfo').innerHTML = '<div class="note bad">' + esc(e.message) + '</div>'; });
     };
@@ -744,7 +783,16 @@
       if (!dept) return toast('اختر القسم', 'bad');
       var run = function () {
         b.disabled = true; b.textContent = 'جاري الرفع...';
-        api('importRows', { entity: ent, dept_id: dept, rows: rows, mode: mode }).then(function (r) { showImportResult(r, ent); })
+        // الأسطر المكررة الاسم تُستبعد (إن بقي الخيار مفعّلاً)، وتُعاد أرقام أسطر الأخطاء إلى أرقامها في الملف
+        var skip = {}, send = [], line = [];
+        if (dups.length && $('#imDupSkip') && $('#imDupSkip').checked) dups.forEach(function (x) { skip[x.i] = 1; });
+        rows.forEach(function (x, i) { if (!skip[i]) { send.push(x); line.push(i + 2); } });
+        api('importRows', { entity: ent, dept_id: dept, rows: send, mode: mode }).then(function (r) {
+          r.errors = (r.errors || []).map(function (e) { return e.replace(/^سطر (\d+):/, function (m, n) { return 'سطر ' + (line[n - 2] || n) + ':'; }); });
+          var n = Object.keys(skip).length;
+          if (n) r.errors.unshift('لم تُرفع ' + n + ' أسطر لأن أسماءها مكررة (انظر التنبيه قبل الرفع)');
+          showImportResult(r, ent);
+        })
           .catch(function (e) { b.disabled = false; b.textContent = 'رفع'; fail(e); });
       };
       if (mode === 'replace') { if (window.confirm(REPLACE[ent] + '. متابعة؟')) run(); } else run();

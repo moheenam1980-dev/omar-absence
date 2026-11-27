@@ -406,6 +406,11 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: var(--fs-md); }
 .ins-courses .cn { flex: 1; min-width: 0; font-weight: 500; color: var(--ink); }
 .ins-courses li > .muted, .ins-courses li > .chip { flex-shrink: 0; white-space: nowrap; }
 @media print { .ins-list { display: block; } .ins-list .card { border: 1px solid #999 !important; padding: 8px !important; margin-bottom: 8px; break-inside: avoid; } }
+/* منع تكرار الطالب: تنبيه الاسم الرباعي */
+.dup-hint { min-height: 0; margin-top: 6px; font-size: var(--fs-sm); color: var(--warn-ink); }
+.dup-hint:not(:empty) { background: var(--warn-soft); border-radius: 10px; padding: 6px 10px; }
+.dup-list { margin: 6px 0; padding-inline-start: 18px; font-size: var(--fs-sm); }
+.dup-skip { display: flex; align-items: center; gap: 8px; font-weight: 500; margin-top: 4px; }
 /* تسجيل طلبة في مادة: قائمة الأسماء للاختيار */
 .pick-all { display: flex; gap: 8px; align-items: center; margin-top: 12px; font-weight: 500; }
 #enPick.off { opacity: .4; pointer-events: none; }
