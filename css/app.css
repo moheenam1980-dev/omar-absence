@@ -375,6 +375,39 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: var(--fs-md); }
 .tbl tr.sel td { background: var(--soft); font-weight: 500; }
 .tabs.tiles a.off { opacity: .45; filter: grayscale(.6); box-shadow: none; cursor: not-allowed; }
 @media (hover: hover) { .tabs.tiles a.off:hover { transform: none; border-color: var(--line); box-shadow: none; } }
+/* الإسناد: تقرير «حسب التدريسي» */
+.teach-seg { flex: 0 0 auto; }
+.teach-seg button { flex: none; min-height: 34px; font-size: var(--fs-sm); padding: 0 14px; white-space: nowrap; }
+.ins-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; }
+.ins-list .card { margin: 0; }
+.ins-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.ins-head h3 { flex: 1; min-width: 0; font-size: var(--fs-md); }
+.ins-card.none { border-style: dashed; background: color-mix(in srgb, var(--warn-soft) 45%, var(--card)); }
+.ins-courses { list-style: none; margin: 10px 0 0; padding: 0; }
+.ins-courses li { display: flex; align-items: center; gap: 10px; justify-content: space-between; padding: 7px 0; border-top: 1px solid var(--line-2); font-size: var(--fs-sm); }
+.ins-courses li:first-child { border-top: 0; }
+.ins-courses .cn { flex: 1; min-width: 0; font-weight: 500; color: var(--ink); }
+.ins-courses li > .muted, .ins-courses li > .chip { flex-shrink: 0; white-space: nowrap; }
+@media print { .ins-list { display: block; } .ins-list .card { border: 1px solid #999 !important; padding: 8px !important; margin-bottom: 8px; break-inside: avoid; } }
+/* تسجيل طلبة في مادة: قائمة الأسماء للاختيار */
+.pick-all { display: flex; gap: 8px; align-items: center; margin-top: 12px; font-weight: 500; }
+#enPick.off { opacity: .4; pointer-events: none; }
+.pick-bar { display: flex; align-items: center; gap: 6px; margin: 8px 0 6px; flex-wrap: wrap; }
+.pick-bar .sp { flex: 1; }
+.pick-bar .icon-btn { height: 34px; font-size: var(--fs-xs); }
+.pick-list { max-height: 38vh; overflow-y: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--card); }
+.pick-row { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-bottom: 1px solid var(--line-2); cursor: pointer; transition: background-color .15s; }
+.pick-row:last-child { border-bottom: 0; }
+.pick-row input { width: 18px; height: 18px; accent-color: var(--primary); flex-shrink: 0; }
+.pick-row .nm { flex: 1; min-width: 0; font-weight: 500; line-height: 1.4; }
+.pick-row .nm small { display: block; color: var(--muted); font-size: var(--fs-xs); font-weight: 400; direction: ltr; text-align: right; }
+.pick-row.ck { background: var(--soft); }
+.pick-row.dis { cursor: default; color: var(--muted); }
+@media (hover: hover) { .pick-row:not(.dis):hover { background: var(--hover); } .pick-row.ck:hover { background: var(--soft); } }
+.pick-more { padding: 12px; text-align: center; font-size: var(--fs-sm); }
+.pick-other { margin-top: 10px; font-size: var(--fs-sm); }
+.pick-other summary { cursor: pointer; color: var(--indigo); font-weight: 500; }
+.pick-other .inp { margin-top: 8px; }
 /* القائمة الجانبية للإدارة (حاسوب فقط) */
 .subnav { display: none; }
 @media (min-width: 900px) {

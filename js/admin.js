@@ -193,11 +193,16 @@
   };
 
   /* ----- الطلبة (بدون شعب: الرقم، الاسم، القسم فقط) ----- */
-  function courseLabel(c) { return c.c_name + ' - ' + c.c_stage; }
-  function coursesSorted(D) {
+  /** اسم المادة في القوائم: الاسم - المرحلة - الفصل (مثل: برمجة الحاسوب - الأولى - الفصل الأول) */
+  function semLabel(s) { return !s ? '' : s === 'سنوي' ? 'سنوية' : 'الفصل ' + s; }
+  function courseLabel(c) { return c.c_name + ' - ' + c.c_stage + (c.c_semester ? ' - ' + semLabel(c.c_semester) : ''); }
+  /** ترتيب المواد: حسب المرحلة، ثم الفصل (الأول، الثاني، سنوي)، ثم الاسم */
+  function semRank(s) { var i = SEMS.indexOf(s); return i < 0 ? SEMS.length : i; }
+  function courseCmp(a, b) {
     var st = stages();
-    return (D.courses || []).slice().sort(function (a, b) { return st.indexOf(a.c_stage) - st.indexOf(b.c_stage) || a.c_name.localeCompare(b.c_name, 'ar'); });
+    return st.indexOf(a.c_stage) - st.indexOf(b.c_stage) || semRank(a.c_semester) - semRank(b.c_semester) || a.c_name.localeCompare(b.c_name, 'ar');
   }
+  function coursesSorted(D) { return (D.courses || []).slice().sort(courseCmp); }
   function enrolledIn(D, cId) {
     var m = {};
     (D.enrollment || []).forEach(function (e) { if (e.c_id === cId) m[e.st_id] = 1; });
@@ -240,7 +245,7 @@
   /* ----- المواد ----- */
   VIEW.courses = function () {
     return need(['courses']).then(function (D) {
-      var st = stages(), list = D.courses.slice().sort(function (a, b) { return st.indexOf(a.c_stage) - st.indexOf(b.c_stage) || a.c_name.localeCompare(b.c_name, 'ar'); });
+      var list = coursesSorted(D);
       frame('<div class="toolbar"><button class="btn sm" data-act="aAdd" data-e="courses">إضافة مادة</button><button class="btn sm ok" data-act="aImport" data-e="courses">رفع إكسل</button><span class="sp"></span><span class="muted">العدد: ' + list.length + '</span></div>' +
         table(['المادة', 'المرحلة', 'الفصل', 'س. أسبوعية', 'س. كلية', 'الوحدات', 'الحالة', ''], list.map(function (c) {
           return '<tr><td class="w">' + esc(c.c_name) + '</td><td>' + esc(c.c_stage) + '</td><td>' + esc(c.c_semester) + '</td><td>' + esc(c.c_w_hours) + '</td><td>' + esc(c.c_total_hours) + '</td><td>' + esc(c.ects) + '</td><td>' + yn(c.active) + '</td>' + acts('courses', c.c_id) + '</tr>';
@@ -258,17 +263,52 @@
   }
   VIEW.teaching = function () {
     return need(['courses', 'teaching', 'enrollment']).then(function (D) {
-      var st = stages(), list = D.teaching.map(function (t) { return { t: t, c: courseOf(D, t.c_id) }; })
-        .sort(function (a, b) { return st.indexOf(a.c.c_stage) - st.indexOf(b.c.c_stage) || a.c.c_name.localeCompare(b.c.c_name, 'ar'); });
-      frame('<div class="note">هنا تحدد أي تدريسي يدرّس أي مادة في السنة الحالية. طلبة المحاضرة هم الطلبة الذين اختاروا المادة فقط (تبويب «اختيار المواد»).</div>' +
-        '<div class="toolbar"><button class="btn sm" data-act="aAdd" data-e="teaching">إسناد مادة لتدريسي</button><span class="sp"></span><span class="muted">العدد: ' + list.length + '</span></div>' +
-        table(['المادة', 'المرحلة', 'التدريسي', 'الدراسة', 'الطلبة المسجلون', ''], list.map(function (x) {
+      var list = D.teaching.map(function (t) { return { t: t, c: courseOf(D, t.c_id) }; })
+        .sort(function (a, b) { return courseCmp(a.c, b.c); });
+      // عرضان: «حسب المادة» (الجدول المعتاد) و«حسب التدريسي» (من أُسندت إليه مواد ومن لم تُسند إليه)
+      var by = M.teachView || 'course';
+      var seg = '<div class="seg teach-seg" id="tView"><button type="button" data-v="course"' + (by === 'course' ? ' class="on"' : '') + '>حسب المادة</button>' +
+                '<button type="button" data-v="ins"' + (by === 'ins' ? ' class="on"' : '') + '>حسب التدريسي</button></div>';
+      var body = by === 'ins' ? teachByIns(D, list) :
+        table(['المادة', 'المرحلة', 'الفصل', 'التدريسي', 'الدراسة', 'الطلبة المسجلون', ''], list.map(function (x) {
           var n = countIn(D, x.t.c_id, x.t.study);
-          return '<tr><td class="w">' + esc(x.c.c_name) + '</td><td>' + esc(x.c.c_stage) + '</td><td class="w">' + esc(insName(x.t.ins_id)) + '</td><td>' + esc(x.t.study || 'الكل') + '</td><td>' +
+          return '<tr><td class="w">' + esc(x.c.c_name) + '</td><td>' + esc(x.c.c_stage) + '</td><td>' + esc(x.c.c_semester || '') + '</td><td class="w">' + esc(insName(x.t.ins_id)) + '</td><td>' + esc(x.t.study || 'الكل') + '</td><td>' +
                  (n ? n : '<span class="chip warn">0</span>') + '</td>' + acts('teaching', x.t.t_id) + '</tr>';
-        }), 'لم تُسند أي مادة بعد'));
+        }), 'لم تُسند أي مادة بعد');
+      frame('<div class="note no-print">هنا تحدد أي تدريسي يدرّس أي مادة في السنة الحالية. طلبة المحاضرة هم الطلبة الذين اختاروا المادة فقط (تبويب «اختيار المواد»).</div>' +
+        '<div class="toolbar"><button class="btn sm" data-act="aAdd" data-e="teaching">إسناد مادة لتدريسي</button>' + seg + '<span class="sp"></span><span class="muted">العدد: ' + list.length + '</span></div>' + body);
+      $('#tView').onclick = function (e) { var b = e.target.closest('button'); if (!b) return; M.teachView = b.dataset.v; render(['teaching']); };
     });
   };
+  /** تقرير «حسب التدريسي»: كل تدريسي في القسم (ومن يدرّس مواد القسم من أقسام أخرى) مع المواد المسندة إليه، ثم المواد التي لم تُسند */
+  var TREP = null;
+  function teachByIns(D, list) {
+    var mine = {}, rows = [];
+    list.forEach(function (x) { (mine[x.t.ins_id] = mine[x.t.ins_id] || []).push(x); });
+    var ins = M.meta.instructors.filter(function (i) { return i.role !== 'admin' && (mine[i.ins_id] || (i.dept_id === M.dept && i.active !== 'لا')); })
+      .sort(function (a, b) { return (mine[a.ins_id] ? 1 : 0) - (mine[b.ins_id] ? 1 : 0) || a.ins_name.localeCompare(b.ins_name, 'ar'); });
+    var given = {}; list.forEach(function (x) { given[x.t.c_id] = 1; });
+    var free = coursesSorted(D).filter(function (c) { return c.active !== 'لا' && !given[c.c_id]; });
+    var withC = ins.filter(function (i) { return mine[i.ins_id]; }).length;
+    TREP = { ins: ins, mine: mine, free: free };
+    var h = '<div class="stats"><div class="stat"><b>' + ins.length + '</b><span>التدريسيون</span></div><div class="stat"><b>' + withC + '</b><span>أُسندت إليهم مواد</span></div>' +
+            '<div class="stat lv2"><b>' + (ins.length - withC) + '</b><span>بلا مواد</span></div><div class="stat lv3"><b>' + free.length + '</b><span>مواد لم تُسند</span></div></div>' +
+            '<div class="toolbar no-print"><button class="btn sm soft" data-act="aXlsTeach">تصدير إكسل</button><button class="btn sm ghost" data-act="print">طباعة</button></div>';
+    h += '<div class="ins-list">' + ins.map(function (i) {
+      var cs = mine[i.ins_id] || [];
+      return '<div class="card ins-card' + (cs.length ? '' : ' none') + '"><div class="ins-head"><h3>' + esc(i.ins_name) + '</h3>' +
+             (i.dept_id && i.dept_id !== M.dept ? '<span class="chip ghost">' + esc(deptName(i.dept_id)) + '</span>' : '') +
+             (cs.length ? '<span class="chip ok">' + cs.length + (cs.length > 2 ? ' مواد' : cs.length === 2 ? ' مادتان' : ' مادة') + '</span>' : '<span class="chip warn">لم تُسند إليه مادة</span>') + '</div>' +
+             (cs.length ? '<ul class="ins-courses">' + cs.map(function (x) {
+               var n = countIn(D, x.t.c_id, x.t.study);
+               return '<li><span class="cn">' + esc(courseLabel(x.c)) + '</span><span class="muted">' + esc(x.t.study || 'الكل') + ' · ' + (n ? n + ' طالب' : '<span class="chip warn">0 طالب</span>') + '</span></li>';
+             }).join('') + '</ul>' : '') + '</div>';
+    }).join('') + '</div>';
+    if (free.length) h += '<h2 class="page-title" style="font-size:var(--fs-lg);margin-top:18px">مواد لم تُسند لأي تدريسي (' + free.length + ')</h2><div class="card"><ul class="ins-courses">' +
+      free.map(function (c) { return '<li><span class="cn">' + esc(courseLabel(c)) + '</span><span class="chip warn">بلا تدريسي</span></li>'; }).join('') + '</ul></div>';
+    else h += '<div class="note ok">كل مواد القسم الفعّالة مسندة لتدريسيين.</div>';
+    return h;
+  }
 
   /* ----- اختيار المواد (نظام بولونيا) ----- */
   function paintEnrollment() {
@@ -296,20 +336,65 @@
       bindFilters(paintEnrollment); paintEnrollment();
     });
   };
+  /** تسجيل طلبة في مادة: اختيار الطلبة من قائمة بأسمائهم (بحث بالاسم أو الرقم) بدل كتابة الأرقام.
+      يبقى خيار «كل طلبة القسم»، وخانة صغيرة لرقم طالب من قسم آخر. نفس طلب importRows كما كان */
   function enrollDialog() {
-    var D = M.data[M.dept];
+    var D = M.data[M.dept], sel = {}, q = '';
+    var pool = (D.students || []).filter(active).slice().sort(function (a, b) { return a.st_name.localeCompare(b.st_name, 'ar'); });
     A.modal('<h3>تسجيل طلبة في مادة</h3><form id="enForm"><label class="f" for="enC">المادة</label><select class="inp" id="enC" required>' +
       opt(coursesSorted(D).map(function (c) { return [c.c_id, courseLabel(c)]; }), M.f.course, 'اختر المادة') + '</select>' +
       '<label class="f" for="enS">الدراسة</label><select class="inp" id="enS">' + opt([['', 'الكل']].concat(STUDIES), '') + '</select>' +
-      '<label class="f" for="enIds">أرقام الطلبة (رقم في كل سطر، أو مفصولة بمسافة أو فاصلة)</label><textarea class="inp" id="enIds" dir="ltr" rows="6" style="height:auto;font-family:inherit"></textarea>' +
-      '<label style="display:flex;gap:8px;align-items:center;margin-top:10px"><input type="checkbox" id="enAll"> تسجيل كل طلبة القسم المستمرين في هذه المادة</label>' +
+      '<label class="pick-all"><input type="checkbox" id="enAll"> تسجيل كل طلبة القسم المستمرين في هذه المادة</label>' +
+      '<div id="enPick"><label class="f" for="enQ">الطلبة</label>' +
+      '<input class="inp" id="enQ" placeholder="ابحث بالاسم أو الرقم" autocomplete="off">' +
+      '<div class="pick-bar"><span id="enCount" class="muted"></span><span class="sp"></span>' +
+      '<button type="button" class="icon-btn" id="enSelVis">تحديد الظاهرين</button><button type="button" class="icon-btn" id="enClear">إلغاء التحديد</button></div>' +
+      '<div class="pick-list" id="enList" role="listbox" aria-multiselectable="true"></div>' +
+      '<details class="pick-other"><summary>طالب من قسم آخر؟ أضفه برقمه</summary>' +
+      '<input class="inp" id="enIds" dir="ltr" placeholder="رقم الطالب (أو عدة أرقام مفصولة بمسافة)" autocomplete="off"></details></div>' +
       '<div class="row" style="margin-top:16px"><button class="btn ok" id="enGo">تسجيل</button><button type="button" class="btn ghost" data-act="closeModal">إلغاء</button></div></form>');
+    var inCourse = function () {   // الطلبة المسجلون مسبقاً في المادة المختارة
+      var m = {}, c = $('#enC').value;
+      if (c) (D.enrollment || []).forEach(function (e) { if (e.c_id === c) m[e.st_id] = 1; });
+      return m;
+    };
+    var typed = function () { return $('#enIds').value.split(/[\s,،;]+/).map(function (x) { return x.trim(); }).filter(String); };
+    var visible = function () {
+      return pool.filter(function (s) { return !q || s.st_name.indexOf(q) >= 0 || s.st_id.toLowerCase().indexOf(q.toLowerCase()) >= 0; });
+    };
+    var count = function () {
+      var all = $('#enAll').checked, n = Object.keys(sel).length + typed().length;
+      $('#enCount').textContent = 'المحدَّدون: ' + n + ' من ' + pool.length;
+      $('#enGo').textContent = all ? 'تسجيل كل طلبة القسم' : (n ? 'تسجيل (' + n + ')' : 'تسجيل');
+    };
+    var paint = function () {
+      var had = inCourse(), list = visible();
+      $('#enList').innerHTML = list.length ? list.slice(0, 400).map(function (s) {
+        var on = had[s.st_id], ck = sel[s.st_id];
+        return '<label class="pick-row' + (ck ? ' ck' : '') + (on ? ' dis' : '') + '"><input type="checkbox" data-id="' + esc(s.st_id) + '"' + (ck ? ' checked' : '') + (on ? ' disabled' : '') + '>' +
+               '<span class="nm">' + esc(s.st_name) + '<small class="num">' + esc(s.st_id) + '</small></span>' + (on ? '<span class="chip ok">مسجّل</span>' : '') + '</label>';
+      }).join('') + (list.length > 400 ? '<div class="muted pick-more">يظهر أول 400. اكتب جزءاً من الاسم لتضييق القائمة.</div>' : '')
+        : '<div class="muted pick-more">لا يوجد طالب بهذا الاسم أو الرقم في القسم.</div>';
+      count();
+    };
+    $('#enList').onchange = function (e) {
+      var cb = e.target; if (!cb.dataset.id) return;
+      if (cb.checked) sel[cb.dataset.id] = 1; else delete sel[cb.dataset.id];
+      cb.closest('.pick-row').classList.toggle('ck', cb.checked); count();
+    };
+    $('#enQ').oninput = function () { q = this.value.trim(); paint(); };
+    $('#enC').onchange = function () { var had = inCourse(); Object.keys(sel).forEach(function (id) { if (had[id]) delete sel[id]; }); paint(); };
+    $('#enIds').oninput = count;
+    $('#enSelVis').onclick = function () { var had = inCourse(); visible().slice(0, 400).forEach(function (s) { if (!had[s.st_id]) sel[s.st_id] = 1; }); paint(); };
+    $('#enClear').onclick = function () { sel = {}; paint(); };
+    $('#enAll').onchange = function () { $('#enPick').classList.toggle('off', this.checked); count(); };
+    paint();
     $('#enForm').onsubmit = function (ev) {
       ev.preventDefault();
-      var c = $('#enC').value, study = $('#enS').value, ids = $('#enIds').value.split(/[\s,،;]+/).map(function (x) { return x.trim(); }).filter(String);
+      var c = $('#enC').value, study = $('#enS').value, ids = Object.keys(sel).concat(typed());
       if ($('#enAll').checked) D.students.forEach(function (s) { if (!s.status || s.status === 'مستمر') ids.push(s.st_id); });
       if (!c) return toast('اختر المادة', 'bad');
-      if (!ids.length) return toast('أدخل أرقام الطلبة أو اختر «كل طلبة القسم»', 'bad');
+      if (!ids.length) return toast('اختر الطلبة من القائمة أو «كل طلبة القسم»', 'bad');
       var b = $('#enGo'); b.disabled = true;
       api('importRows', { entity: 'enrollment', dept_id: M.dept, lines: true, mode: 'merge',
                           rows: ids.map(function (id) { return { st_id: id, c_id: c, study: study }; }) }).then(function (r) {
@@ -489,7 +574,7 @@
       r = find(D.teaching, 't_id');
       form(isNew ? 'إسناد مادة لتدريسي' : 'تعديل الإسناد', [
         { k: 'c_id', label: 'المادة', type: 'select', empty: 'اختر المادة', value: r.c_id,
-          options: D.courses.filter(function (c) { return c.active !== 'لا'; }).map(function (c) { return [c.c_id, c.c_name + ' - ' + c.c_stage]; }) },
+          options: coursesSorted(D).filter(function (c) { return c.active !== 'لا'; }).map(function (c) { return [c.c_id, courseLabel(c)]; }) },
         { k: 'ins_id', label: 'التدريسي', type: 'select', empty: 'اختر التدريسي', value: r.ins_id,
           options: M.meta.instructors.filter(function (i) { return i.active !== 'لا' && i.role !== 'admin'; })   // مدير النظام لا تُسند إليه مواد.sort(function (a, b) { return a.ins_name.localeCompare(b.ins_name, 'ar'); })
                     .map(function (i) { return [i.ins_id, i.ins_name + ' (' + (i.dept_id ? deptName(i.dept_id) : 'كل الأقسام') + ')']; }) },
@@ -656,6 +741,17 @@
     },
     aTemplate: function (el) { var s = IMP[el.dataset.e]; A.exportXlsx(s.file, [{ name: 'القالب', rows: [s.cols.map(function (c) { return c[1]; }), s.sample] }]); },
     aXlsCreds: function () { A.exportXlsx('حسابات التدريسيين', [{ name: 'الحسابات', rows: [['الاسم', 'اسم المستخدم', 'كلمة المرور']].concat(M.creds) }]); },
+    aXlsTeach: function () {
+      if (!TREP) return;
+      var rows = [['التدريسي', 'قسم التدريسي', 'المادة', 'المرحلة', 'الفصل', 'الدراسة', 'الطلبة المسجلون']], D = M.data[M.dept];
+      TREP.ins.forEach(function (i) {
+        var cs = TREP.mine[i.ins_id] || [];
+        if (!cs.length) rows.push([i.ins_name, deptName(i.dept_id), 'لم تُسند إليه مادة', '', '', '', '']);
+        cs.forEach(function (x) { rows.push([i.ins_name, deptName(i.dept_id), x.c.c_name, x.c.c_stage, x.c.c_semester || '', x.t.study || 'الكل', countIn(D, x.t.c_id, x.t.study)]); });
+      });
+      var fr = [['المادة', 'المرحلة', 'الفصل']].concat(TREP.free.map(function (c) { return [c.c_name, c.c_stage, c.c_semester || '']; }));
+      A.exportXlsx('إسناد المواد - ' + deptName(M.dept), [{ name: 'التدريسيون والمواد', rows: rows }, { name: 'مواد لم تُسند', rows: fr }]);
+    },
     aXlsStudents: function () {
       var rows = [['الرقم', 'الاسم', 'عدد المواد المختارة', 'الحالة']];
       stFiltered(M.data[M.dept]).forEach(function (s) { rows.push([s.st_id, s.st_name, s.n_courses || 0, s.status || 'مستمر']); });
