@@ -311,8 +311,42 @@
   }
 
   /* ----- اختيار المواد (نظام بولونيا) ----- */
+  /** عدد الطلبة المسجلين في كل مادة. «مستمر» = الطالب المستمر (أو من قسم آخر، لا نعرف حالته هنا) */
+  function enrCounts(D) {
+    var st = {}, out = {};
+    (D.students || []).forEach(function (x) { st[x.st_id] = x; });
+    (D.enrollment || []).forEach(function (e) {
+      var o = out[e.c_id] || (out[e.c_id] = { on: 0, off: 0, sab: 0, mas: 0, all: 0 }), s = st[e.st_id];
+      if (s && !active(s)) { o.off++; return; }
+      o.on++; if (e.study === 'صباحي') o.sab++; else if (e.study === 'مسائي') o.mas++; else o.all++;
+    });
+    return out;
+  }
+  /** فوق الجدول: بدون اختيار مادة = عدد الطلبة في كل مادة، ومع اختيار مادة = بطاقة بعدد طلبتها */
+  function paintEnrSummary(D) {
+    var box = $('#enrSum'); if (!box) return;
+    var cnt = enrCounts(D), z = { on: 0, off: 0, sab: 0, mas: 0, all: 0 };
+    if (M.f.course) {
+      var c = (D.courses || []).filter(function (x) { return x.c_id === M.f.course; })[0] || { c_name: '' }, k = cnt[M.f.course] || z, parts = [];
+      if (k.sab) parts.push('صباحي: ' + k.sab); if (k.mas) parts.push('مسائي: ' + k.mas); if (k.all && (k.sab || k.mas)) parts.push('بدون تحديد الدراسة: ' + k.all);
+      box.innerHTML = '<div class="card enr-one' + (k.on ? '' : ' zero') + '"><div class="grow"><h3>' + esc(courseLabel(c)) + '</h3>' +
+        '<div class="muted">' + (k.on ? 'الطلبة المستمرون المسجلون في المادة' : 'لا يوجد طلبة مسجلون في هذه المادة بعد') + (parts.length ? ' · ' + parts.join(' · ') : '') +
+        (k.off ? ' · غير مستمرين: ' + k.off : '') + '</div></div><div class="enr-big"><b class="num">' + k.on + '</b><span>طالب</span></div>' +
+        '<button type="button" class="btn sm ghost" data-enr="">كل المواد</button></div>';
+      return;
+    }
+    if (M.f.q) { box.innerHTML = ''; return; }
+    var list = coursesSorted(D);
+    box.innerHTML = list.length ? '<div class="card enr-all"><h3>عدد الطلبة في كل مادة</h3><div class="muted" style="font-size:var(--fs-sm)">اضغط على مادة لعرض طلبتها.</div><div class="enr-grid">' +
+      list.map(function (c) {
+        var k = cnt[c.c_id] || z;
+        return '<button type="button" class="enr-item' + (k.on ? '' : ' zero') + '" data-enr="' + esc(c.c_id) + '"><span class="cn">' + esc(c.c_name) +
+               '<small>' + esc(c.c_stage) + ' · ' + esc(semLabel(c.c_semester)) + '</small></span><b class="num">' + k.on + '</b></button>';
+      }).join('') + '</div></div>' : '';
+  }
   function paintEnrollment() {
     var D = M.data[M.dept], q = M.f.q, cs = {};
+    paintEnrSummary(D);
     D.courses.forEach(function (c) { cs[c.c_id] = c; });
     var list = D.enrollment.filter(function (e) {
       return (!M.f.course || e.c_id === M.f.course) && (!q || (e.st_name || '').indexOf(q) >= 0 || e.st_id.indexOf(q) >= 0);
@@ -328,12 +362,19 @@
   }
   VIEW.enrollment = function () {
     return need(['courses', 'enrollment', 'students']).then(function (D) {
+      var cnt = enrCounts(D);
       frame('<div class="note">في نظام بولونيا يختار كل طالب مواده. سجّل هنا المواد التي اختارها كل طالب للسنة الحالية. ' +
         'الطالب يظهر في قائمة المحاضرة ويُحسب عليه الغياب <b>فقط</b> في المواد التي اختارها، ولا يُسجَّل عليه أي غياب في مادة لم يخترها.</div>' +
         '<div class="toolbar"><button class="btn sm ok" data-act="aImport" data-e="enrollment">رفع إكسل</button><button class="btn sm" data-act="aEnrollAdd">تسجيل طلبة في مادة</button></div>' +
-        '<div class="toolbar">' + stFilters(D).replace('كل طلبة القسم', 'كل المواد').replace(/المسجلون في: /g, '') + '</div>' +
-        '<div class="muted" id="stCount" style="margin-bottom:8px"></div><div id="stBox"></div>');
+        '<div class="toolbar"><input class="inp" id="fQ" placeholder="بحث بالاسم أو الرقم" value="' + esc(M.f.q) + '"><select class="inp" id="fCourse">' +
+        opt(coursesSorted(D).map(function (c) { var k = cnt[c.c_id]; return [c.c_id, courseLabel(c) + ' (' + (k ? k.on : 0) + ')']; }), M.f.course, 'كل المواد') + '</select></div>' +
+        '<div id="enrSum"></div><div class="muted" id="stCount" style="margin-bottom:8px"></div><div id="stBox"></div>');
       bindFilters(paintEnrollment); paintEnrollment();
+      $('#enrSum').onclick = function (e) {
+        var b = e.target.closest('[data-enr]'); if (!b) return;
+        M.f.course = b.dataset.enr; M.f.limit = 150; $('#fCourse').value = M.f.course; paintEnrollment();
+        if (M.f.course) $('#enrSum').scrollIntoView({ block: 'nearest' });
+      };
     });
   };
   /** تسجيل طلبة في مادة: اختيار الطلبة من قائمة بأسمائهم (بحث بالاسم أو الرقم) بدل كتابة الأرقام.
